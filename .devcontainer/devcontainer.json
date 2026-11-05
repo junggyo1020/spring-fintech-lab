@@ -1,0 +1,28 @@
+{
+  "name": "spring-fintech-lab",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "none",
+      "installGradle": "true",
+      "gradleVersion": "8.14.3"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "vmware.vscode-boot-dev-pack"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic"
+      }
+    }
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  }
+}

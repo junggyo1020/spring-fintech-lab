@@ -19,6 +19,17 @@
 4. **Docker Desktop** 설치 (Phase 5부터 Testcontainers, MySQL에 필요. 지금 설치만)
 5. 이 레포를 clone 해서 IntelliJ로 열기
 
+### 대안: 설치 없이 브라우저에서 개발하기 (GitHub Codespaces)
+회사 VDI처럼 프로그램을 설치할 수 없는 환경에서는 브라우저만으로 개발할 수 있다.
+이 레포에는 `.devcontainer/devcontainer.json`이 있어서 Java 21, Gradle, Docker, VS Code Java 확장이 자동으로 준비된다.
+
+1. GitHub 레포 페이지 → 초록색 **Code** 버튼 → **Codespaces** 탭 → **Create codespace on main**
+2. 첫 실행은 몇 분 걸린다. 브라우저에 VS Code가 열리면 터미널에서 `java -version` 확인
+3. 다 쓰면 왼쪽 아래 **Codespaces** → **Stop Current Codespace** (켜둔 시간만큼 무료 사용량이 차감됨)
+
+> ⚠️ 회사 장비에서 쓰기 전에 회사 보안 정책(외부 개발 서비스 사용, 개인 용도 사용)을 먼저 확인할 것.
+> VS Code 단축키는 IntelliJ와 다르다. 명령 팔레트(`F1` 또는 `Ctrl Shift P`)에서 "Rename", "Extract" 등을 검색하면 된다.
+
 ### IntelliJ 필수 단축키 (macOS / Windows)
 | 기능 | macOS | Windows |
 |---|---|---|
