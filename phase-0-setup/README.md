@@ -21,7 +21,7 @@
 
 ### 대안: 설치 없이 브라우저에서 개발하기 (GitHub Codespaces)
 회사 VDI처럼 프로그램을 설치할 수 없는 환경에서는 브라우저만으로 개발할 수 있다.
-이 레포에는 `.devcontainer/devcontainer.json`이 있어서 Java 21, Gradle, Docker, VS Code Java 확장이 자동으로 준비된다.
+이 레포에는 `.devcontainer/devcontainer.json`이 있어서 Java 21, Gradle, VS Code Java 확장이 자동으로 준비된다. (Docker는 Phase 5에서 추가 예정)
 
 1. GitHub 레포 페이지 → 초록색 **Code** 버튼 → **Codespaces** 탭 → **Create codespace on main**
 2. 첫 실행은 몇 분 걸린다. 브라우저에 VS Code가 열리면 터미널에서 `java -version` 확인
