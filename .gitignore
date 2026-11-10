@@ -16,3 +16,7 @@ out/
 
 # Harness 중간 산출물
 _workspace/
+
+# Python
+__pycache__/
+*.pyc
