@@ -1,12 +1,13 @@
-# 미션 PR을 Claude가 mission-review 스킬 기준으로 리뷰한다.
+# 미션 PR을 Claude가 .claude/skills/mission-review/SKILL.md 기준으로 리뷰한다.
 # 사전 준비(레포 관리자가 직접):
 #   1) https://github.com/apps/claude 에서 이 레포에 Claude GitHub App 설치
-#   2) 로컬에서 `claude setup-token` 실행 → 출력된 토큰을 레포 Settings > Secrets and variables > Actions에
+#   2) 로컬 터미널에서 `claude setup-token` 실행, 출력된 토큰을 레포 Settings > Secrets and variables > Actions에
 #      CLAUDE_CODE_OAUTH_TOKEN 이름으로 등록 (Pro/Max 구독 사용량에서 차감)
 # 동작:
-#   - review: phase*/ 브랜치의 PR이 열리거나 Draft에서 Ready로 바뀌면 자동 리뷰 1회
-#   - respond: 레포 소유자가 PR·이슈 댓글에 "@claude"를 쓰면 그 댓글에 답한다
-#     (예: "@claude 수정했어, 지난 지적 1~3번 다시 봐줘")
+#   review: phase* 브랜치의 PR이 열리거나 Draft에서 Ready로 바뀌면 1회차 리뷰
+#   respond: 레포 소유자가 PR, 이슈 댓글에 "@claude"를 쓰면 답한다
+#            PR에서 "@claude 다시 리뷰"처럼 리뷰를 요청하면 이전 지적 대조표가 들어간 n회차 리뷰
+#            질문 이슈에서는 mission-review 스킬 7절(힌트 요청) 형식으로 답한다
 name: Claude Mission Review
 
 on:
@@ -37,20 +38,17 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            이 PR은 spring-fintech-lab 커리큘럼의 미션 제출이다.
-            1. .claude/skills/mission-review/SKILL.md를 읽고 그 절차와 보고서 형식을 따른다.
-            2. PR 본문의 "미션 문서" 링크가 가리키는 파일(phase-*/missions/M*-*.md)을 레포에서 읽는다.
-            3. 변경 파일은 `gh pr diff`로 확인한다.
-            4. 테스트 실행 단계는 PR 본문의 "테스트 결과" 절과 CI(ci.yml) 결과로 대신한다. 직접 실행하지 않는다.
-            5. 정답 코드를 쓰지 않는다. 지적 1건 = 파일:줄 + 관찰 + 질문 1개.
-               줄 단위 지적은 인라인 댓글로, 보고서 전체는 `gh pr comment`로 남긴다.
-            6. Gemini Code Assist가 이미 남긴 줄 단위 지적과 같은 내용은 반복하지 않는다.
-            7. "다음 미션 전에 확인할 개념"이나 "이후 미션에서 다룬다"처럼 다른 미션·Phase를 가리킬 때는
-               docs/curriculum-map.md에서 그 주제를 다루는 미션 번호를 찾아 적는다. 찾지 못하면 미션 번호를 쓰지 않는다.
+            spring-fintech-lab 커리큘럼의 미션 PR을 리뷰한다.
+            1. .claude/skills/mission-review/SKILL.md와 .claude/skills/mission-review/references/writing-rules.md를 읽는다.
+            2. SKILL.md 1절 표의 입력을 모은다. 미션 문서는 PR 본문 "미션 문서" 링크의 파일, 실행 결과는 PR 본문 "자동 점검 결과" 절과 `gh pr checks` 결과다. 테스트를 직접 실행하지 않는다.
+            3. SKILL.md 2절 등급, 3절 지적 형식, 5절 보고서 형식으로 1회차 리뷰를 쓴다.
+            4. 지적마다 해당 줄에 인라인 댓글을 남기고, 보고서 전체는 진행 상황 댓글에 쓴다.
+            5. 보고서에 실행 환경, 도구 권한, 댓글 작성 방식 설명을 쓰지 않는다.
+            6. Gemini Code Assist가 이미 같은 줄에 같은 내용을 지적했으면 그 지적은 쓰지 않는다.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 30
-            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*)"
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*)"
 
   respond:
     if: github.event_name != 'pull_request' && contains(github.event.comment.body, '@claude') && github.event.comment.user.login == github.repository_owner
@@ -69,6 +67,6 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-5-5
-            --max-turns 20
-            --append-system-prompt "spring-fintech-lab 학습 레포다. 코드 리뷰·힌트 요청은 .claude/skills/mission-review/SKILL.md 규칙을 따른다. 정답 코드를 쓰지 않고 파일:줄 + 관찰 + 질문으로 답한다. 다른 미션·Phase를 가리킬 때는 docs/curriculum-map.md에서 미션 번호를 확인한다. 코드를 커밋하거나 브랜치를 만들지 않는다."
-            --allowedTools "Read,Glob,Grep,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*)"
+            --max-turns 30
+            --append-system-prompt "spring-fintech-lab 학습 레포다. 답하기 전에 .claude/skills/mission-review/SKILL.md와 references/writing-rules.md를 읽는다. PR에서 리뷰를 요청받으면 gh pr view --comments로 이전 리뷰 보고서를 찾아 회차를 정하고, SKILL.md 5절 형식에 '이전 지적 대조' 표와 4절 힌트 단계를 적용한다. PR 본문 '리뷰 반영 기록' 표를 대조 근거로 쓴다. 질문이나 힌트 요청은 SKILL.md 7절 형식으로 답한다. 정답 코드를 쓰지 않는다. 코드를 커밋하거나 브랜치를 만들지 않는다. 답에 실행 환경이나 도구 권한 설명을 쓰지 않는다."
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*)"
