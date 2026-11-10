@@ -13,3 +13,6 @@ out/
 
 # Logs
 *.log
+
+# Harness 중간 산출물
+_workspace/
