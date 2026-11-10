@@ -1,6 +1,6 @@
-# Phase 0 — 개발 환경 & 학습 시스템 구축 (0.5주)
+# Phase 0: 개발 환경 & 학습 시스템 구축 (0.5주)
 
-> 가이드 수준: L1 · 선행: 없음 · 이 Phase의 workspace 시작 방법: 빈 디렉터리에서 직접 생성
+> 가이드 수준: L1, 선행: 없음, 이 Phase의 workspace 시작 방법: 빈 디렉터리에서 직접 생성
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
@@ -38,7 +38,7 @@ Gradle은 `build.gradle.kts`에 적힌 설정을 읽어 다음 세 가지를 대
 | 테스트 실행 | JUnit Platform 런처를 클래스패스와 함께 실행 | `./gradlew test`, 결과는 `build/reports/tests/test/index.html` |
 
 **의존성 구성(configuration)**
-- `implementation`: `src/main` 코드가 컴파일·실행할 때 쓴다. 테스트 코드에서도 보인다.
+- `implementation`: `src/main` 코드가 컴파일, 실행할 때 쓴다. 테스트 코드에서도 보인다.
 - `testImplementation`: `src/test` 코드에서만 쓴다. JUnit, AssertJ는 운영 코드에 들어가면 안 되므로 여기에 둔다.
 - `testRuntimeOnly`: 테스트 실행 시에만 클래스패스에 올라간다. 테스트 코드에서 import하지 않는 JUnit Platform 런처가 여기 해당한다.
 
@@ -49,7 +49,7 @@ Wrapper는 "이 프로젝트는 Gradle 8.14.3으로 빌드한다"를 파일로 �
 
 | 파일 | 역할 | 커밋 여부 |
 |---|---|---|
-| `gradlew`, `gradlew.bat` | Wrapper 실행 스크립트 (macOS·Linux / Windows) | 커밋한다 |
+| `gradlew`, `gradlew.bat` | Wrapper 실행 스크립트 (macOS, Linux / Windows) | 커밋한다 |
 | `gradle/wrapper/gradle-wrapper.properties` | `distributionUrl`에 Gradle 버전(8.14.3)이 적혀 있다 | 커밋한다 |
 | `gradle/wrapper/gradle-wrapper.jar` | 지정 버전의 Gradle을 내려받아 실행하는 프로그램 | 커밋한다 (레포 `.gitignore`에 예외로 등록되어 있다) |
 | `.gradle/`, `build/` | 캐시와 빌드 결과물 | 커밋하지 않는다 |

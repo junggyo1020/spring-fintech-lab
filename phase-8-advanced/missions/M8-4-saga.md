@@ -1,16 +1,16 @@
 # M8-4 Saga
 
-> 가이드 수준: L3 · 예상 시간: 9~11h · 선행: M8-3
+> 가이드 수준: L3, 예상 시간: 9~11h, 선행: M8-3
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 지정가 매수 주문이 trading(주문·매칭)과 corebank(대금 홀드)를 거쳐 끝나는 흐름을 오케스트레이션 Saga 상태 머신(상태 8개, 전이표 12줄)으로 구현한다
+- 지정가 매수 주문이 trading(주문, 매칭)과 corebank(대금 홀드)를 거쳐 끝나는 흐름을 오케스트레이션 Saga 상태 머신(상태 8개, 전이표 12줄)으로 구현한다
 - 단계별 실패(홀드 거절, 홀드 응답 타임아웃, 매칭 엔진 제출 실패, 사용자 취소, 확정 실패, 메시지 중복, 메시지 역순)를 주입하는 테스트 12개 이상을 통과시킨다
 - 모든 테스트가 끝날 때 "홀드 누수 0원, 생성된 돈 0원" 불변식 5개를 검사하는 공통 검증 메서드를 만든다
 - 오케스트레이션과 코레오그래피를 기준 6개로 비교한 표를 쓰고, 이 미션의 선택 근거를 적는다
 
 ## 배경
-Phase 7에서는 trading 안에서 예수금 홀드와 주문이 한 DB 트랜잭션이었다. 서비스가 나뉘면 "주문 생성"과 "대금 홀드"가 서로 다른 DB에 있어 한 트랜잭션으로 묶을 수 없다. 홀드는 걸렸는데 주문이 실패하고 홀드를 풀지 않으면 고객의 주문가능금액이 영원히 묶인다(홀드 누수). 반대로 홀드 없이 체결되면 없는 돈으로 주식을 산 것이 된다. Saga는 각 단계를 로컬 트랜잭션으로 나누고 실패 시 보상으로 되돌린다(README 5절). M8-3의 outbox와 멱등 컨슈머가 이 미션의 모든 명령·응답을 나른다.
+Phase 7에서는 trading 안에서 예수금 홀드와 주문이 한 DB 트랜잭션이었다. 서비스가 나뉘면 "주문 생성"과 "대금 홀드"가 서로 다른 DB에 있어 한 트랜잭션으로 묶을 수 없다. 홀드는 걸렸는데 주문이 실패하고 홀드를 풀지 않으면 고객의 주문가능금액이 영원히 묶인다(홀드 누수). 반대로 홀드 없이 체결되면 없는 돈으로 주식을 산 것이 된다. Saga는 각 단계를 로컬 트랜잭션으로 나누고 실패 시 보상으로 되돌린다(README 5절). M8-3의 outbox와 멱등 컨슈머가 이 미션의 모든 명령, 응답을 나른다.
 
 ### 이 Phase의 규칙: 매수 대금은 corebank 계좌에서 홀드한다
 은행 연계 증권계좌를 단순화한 모델로, Phase 7에서 trading 안에 있던 매수 예수금 홀드를 corebank 계좌 홀드로 옮긴다. 매도 수량 홀드는 trading에 그대로 둔다. corebank 계좌는 아래 세 금액을 가진다.
@@ -21,7 +21,7 @@ Phase 7에서는 trading 안에서 예수금 홀드와 주문이 한 DB 트랜�
 | `held_amount` | 미체결 매수 주문 때문에 묶인 금액 |
 | `pending_settlement_amount` | 체결됐지만 T+2 결제일 전이라 출금 예정인 금액 |
 
-주문·출금 가능 금액 = `balance` − `held_amount` − `pending_settlement_amount`. 결제일에 `pending_settlement_amount`를 실제 출금(분개)하는 처리는 M7-6의 결제 예정 내역을 쓰며 이 미션 범위 밖이다.
+주문, 출금 가능 금액 = `balance` − `held_amount` − `pending_settlement_amount`. 결제일에 `pending_settlement_amount`를 실제 출금(분개)하는 처리는 M7-6의 결제 예정 내역을 쓰며 이 미션 범위 밖이다.
 
 홀드 금액(이 미션의 규칙) = 주문가격 × 수량 + 수수료. 수수료 = 금액 × 0.015%, 원 미만 절사. 매수에는 증권거래세가 없다(fintech-domain-facts 2절, 확인일 2026-11-10).
 
@@ -45,7 +45,7 @@ Phase 7에서는 trading 안에서 예수금 홀드와 주문이 한 DB 트랜�
    | `corebank.cash.replies` | corebank → trading | `CashHeld`, `CashHoldRejected(reason)`, `HoldCaptured(executionId)`, `HoldCaptureFailed(executionId, reason)`, `HoldReleased(releasedAmount)` | sagaId |
 
 3. **corebank 홀드 처리**:
-   - `HoldCash`: 가능 금액 ≥ amount면 홀드를 만들고 `CashHeld`, 아니면 `CashHoldRejected(INSUFFICIENT_FUNDS)`. 같은 계좌에 동시에 온 홀드 2개가 가능 금액을 넘게 승인되지 않는다(Phase 5·6의 락 전략 중 하나 사용)
+   - `HoldCash`: 가능 금액 ≥ amount면 홀드를 만들고 `CashHeld`, 아니면 `CashHoldRejected(INSUFFICIENT_FUNDS)`. 같은 계좌에 동시에 온 홀드 2개가 가능 금액을 넘게 승인되지 않는다(Phase 5, 6의 락 전략 중 하나 사용)
    - `CaptureHold`: 해당 Saga 홀드의 남은 금액에서 amount를 빼 `pending_settlement_amount`로 옮긴다. 같은 `executionId`는 한 번만 반영된다. 남은 금액보다 크면 반영하지 않고 `HoldCaptureFailed(EXCEEDS_HOLD)`
    - `ReleaseHold`: 남은 금액 전부를 해제하고 `HoldReleased(해제 금액)`. 남은 금액이 0이면 `HoldReleased(0)`
    - `ReleaseHold`가 `HoldCash`보다 먼저 도착하면 그 sagaId를 "종료됨"으로 기록하고 `HoldReleased(0)`을 보낸다. 이후 같은 sagaId의 `HoldCash`는 `CashHoldRejected(SAGA_CLOSED)`로 거절한다
@@ -78,7 +78,7 @@ Phase 7에서는 trading 안에서 예수금 홀드와 주문이 한 DB 트랜�
 
 ## 직접 작성할 테스트 시나리오
 
-trading·corebank를 한 테스트에서 모두 띄우기 어렵다면 corebank 쪽 명령 처리기 테스트와 trading 쪽 Saga 테스트를 나누고, 메시지는 실제 Kafka(Testcontainers)를 거치게 한다. 최소 2개는 두 서비스와 Kafka를 모두 띄운 종단 테스트로 작성한다. 모든 테스트 끝에서 요구사항 6의 불변식 5개를 검사한다.
+trading, corebank를 한 테스트에서 모두 띄우기 어렵다면 corebank 쪽 명령 처리기 테스트와 trading 쪽 Saga 테스트를 나누고, 메시지는 실제 Kafka(Testcontainers)를 거치게 한다. 최소 2개는 두 서비스와 Kafka를 모두 띄운 종단 테스트로 작성한다. 모든 테스트 끝에서 요구사항 6의 불변식 5개를 검사한다.
 
 반드시 포함할 경우 (최소 12개):
 - 정상: 71,000원 × 10주, 4주(70,900원) + 6주(71,000원) 체결 → `COMPLETED`, `captured_amount` 709,705, 해제 401, 홀드 0 (종단 테스트)
@@ -106,7 +106,7 @@ trading·corebank를 한 테스트에서 모두 띄우기 어렵다면 corebank 
 <details>
 <summary>힌트 1: 두 서비스를 한 테스트에서 띄우기</summary>
 
-`SpringApplicationBuilder`로 corebank·trading 애플리케이션 컨텍스트를 같은 JVM에서 각각 다른 포트·다른 프로퍼티로 시작할 수 있다. 두 컨텍스트가 같은 Testcontainers MySQL의 서로 다른 스키마와 같은 Kafka를 바라보게 한다. 멀티 모듈에서 테스트 전용 모듈(예: `e2e-test`)이 두 모듈을 `testImplementation`으로 의존하게 하면 corebank·trading 본 모듈은 서로를 모른 채로 남는다.
+`SpringApplicationBuilder`로 corebank, trading 애플리케이션 컨텍스트를 같은 JVM에서 각각 다른 포트, 다른 프로퍼티로 시작할 수 있다. 두 컨텍스트가 같은 Testcontainers MySQL의 서로 다른 스키마와 같은 Kafka를 바라보게 한다. 멀티 모듈에서 테스트 전용 모듈(예: `e2e-test`)이 두 모듈을 `testImplementation`으로 의존하게 하면 corebank, trading 본 모듈은 서로를 모른 채로 남는다.
 </details>
 
 ## 완료 기준

@@ -1,10 +1,10 @@
 # M5-1 SQL 기초
 
-> 가이드 수준: L2 · 예상 시간: 3~5h · 선행: M4-8
+> 가이드 수준: L2, 예상 시간: 3~5h, 선행: M4-8
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 컬럼·타입·제약 조건 명세표만 보고 `account`, `account_transaction` 두 테이블의 DDL을 작성해 MySQL 8.4에서 실행한다.
+- 컬럼, 타입, 제약 조건 명세표만 보고 `account`, `account_transaction` 두 테이블의 DDL을 작성해 MySQL 8.4에서 실행한다.
 - JOIN, `GROUP BY`, `HAVING`, 윈도 함수로 7개 질의를 작성하고, 결과 집합이 이 문서의 기대 결과와 행 단위로 일치함을 보여준다.
 - 제약 조건 위반 6종을 일부러 일으켜 MySQL 에러 코드(1048, 1062, 1406, 1451, 1452, 3819)를 기록한다.
 - mysql CLI에서 `START TRANSACTION` / `COMMIT` / `ROLLBACK`으로 이체를 실행하고, 실패한 문장 뒤에도 트랜잭션이 열려 있음을 보여준다.
@@ -18,7 +18,7 @@ Phase 1 M1-3에서 `Ledger.replayBalance`로 했던 "잔액 = 거래 합계" 검
 모든 SQL은 `workspace/sql/` 아래 파일로 저장하고, README의 "워크스페이스 만들기"대로 띄운 `bank-mysql` 컨테이너에서 실행한다.
 파일 실행: `docker exec -i bank-mysql mysql -ubank -pbank bank < sql/01_schema.sql`
 
-1. **`sql/01_schema.sql` — DDL.** 아래 명세대로 두 테이블을 만든다. 파일 맨 앞에서 `account_transaction`, `account` 순서로 `DROP TABLE IF EXISTS` 해서 몇 번을 실행해도 같은 결과가 나오게 한다. 엔진은 InnoDB, 문자셋은 MySQL 8.4 기본값(`utf8mb4`, `utf8mb4_0900_ai_ci`)을 쓴다.
+1. **`sql/01_schema.sql`: DDL.** 아래 명세대로 두 테이블을 만든다. 파일 맨 앞에서 `account_transaction`, `account` 순서로 `DROP TABLE IF EXISTS` 해서 몇 번을 실행해도 같은 결과가 나오게 한다. 엔진은 InnoDB, 문자셋은 MySQL 8.4 기본값(`utf8mb4`, `utf8mb4_0900_ai_ci`)을 쓴다.
 
    **`account`**
 
@@ -49,7 +49,7 @@ Phase 1 M1-3에서 `Ledger.replayBalance`로 했던 "잔액 = 거래 합계" 검
 
    인덱스: `idx_tx_account_occurred (account_id, occurred_at)`. 외래 키 `fk_tx_account`는 이 인덱스를 함께 쓴다.
 
-2. **`sql/02_seed.sql` — 시드 데이터.** 아래 행을 이 순서로 INSERT한다 (`id`는 AUTO_INCREMENT가 1부터 매기게 둔다). `transaction_uuid`는 `UUID()`로 채운다. 파일 맨 앞에서 두 테이블을 비우고(`DELETE` 후 `ALTER TABLE ... AUTO_INCREMENT = 1`, 또는 `01_schema.sql` 재실행) 시작한다.
+2. **`sql/02_seed.sql`: 시드 데이터.** 아래 행을 이 순서로 INSERT한다 (`id`는 AUTO_INCREMENT가 1부터 매기게 둔다). `transaction_uuid`는 `UUID()`로 채운다. 파일 맨 앞에서 두 테이블을 비우고(`DELETE` 후 `ALTER TABLE ... AUTO_INCREMENT = 1`, 또는 `01_schema.sql` 재실행) 시작한다.
 
    | account.id | number | owner_name | owner_id | currency | balance | status |
    |---|---|---|---|---|---|---|
@@ -71,7 +71,7 @@ Phase 1 M1-3에서 `Ledger.replayBalance`로 했던 "잔액 = 거래 합계" 검
 
    계좌 2의 `balance`(30,000)는 거래내역 합계와 일부러 다르게 넣었다. 질의 6이 이 불일치를 찾아야 한다.
 
-3. **`sql/03_queries.sql` — 조회 질의 7개.** 각 질의 위에 `-- Q1` 형식의 주석을 단다. 거래 방향 규칙: `DEPOSIT`, `TRANSFER_IN`은 +, `WITHDRAWAL`, `TRANSFER_OUT`은 −. (`REVERSAL`은 시드에 없으므로 이 미션에서는 다루지 않는다.)
+3. **`sql/03_queries.sql`: 조회 질의 7개.** 각 질의 위에 `-- Q1` 형식의 주석을 단다. 거래 방향 규칙: `DEPOSIT`, `TRANSFER_IN`은 +, `WITHDRAWAL`, `TRANSFER_OUT`은 −. (`REVERSAL`은 시드에 없으므로 이 미션에서는 다루지 않는다.)
    - Q1: `ACTIVE` 계좌의 `number`, `owner_name`, `balance`를 `number` 오름차순으로
    - Q2: 계좌 `110-0000-0001`의 2026년 1월 거래를 `occurred_at` 오름차순으로. 반열린 구간(`>= '2026-01-01' AND < '2026-02-01'`)으로 쓴 버전과 `BETWEEN '2026-01-01' AND '2026-01-31'`로 쓴 버전 두 개
    - Q3: 모든 계좌의 `number`, `owner_name`, 거래 건수. 거래가 0건인 계좌도 0으로 나와야 한다
@@ -80,19 +80,19 @@ Phase 1 M1-3에서 `Ledger.replayBalance`로 했던 "잔액 = 거래 합계" 검
    - Q6: 모든 계좌의 `number`, `balance`, 거래내역으로 다시 계산한 잔액(`ledger_balance`), 그리고 둘이 다른 계좌만 고르는 버전. 거래가 없는 계좌의 `ledger_balance`는 `NULL`이 아니라 `0.00`
    - Q7: 계좌별 가장 최근 거래 1건(`ROW_NUMBER()` 윈도 함수, 같은 시각이면 `id`가 큰 것)
 
-4. **`sql/04_transaction_and_constraints.sql` — 트랜잭션과 제약 조건.** 시드 직후 상태에서 실행한다.
+4. **`sql/04_transaction_and_constraints.sql`: 트랜잭션과 제약 조건.** 시드 직후 상태에서 실행한다.
    - 이체 1: 계좌 1 → 계좌 4로 20,000원. `START TRANSACTION`, `UPDATE` 2개, `INSERT` 2개(`TRANSFER_OUT`, `TRANSFER_IN`), `COMMIT`
    - 이체 2: 계좌 4에 1,000,000원을 먼저 더하고, 계좌 1에서 1,000,000원을 빼는 순서로 실행한다. 두 번째 `UPDATE`가 체크 제약에 걸려 실패한 뒤 `SELECT`로 계좌 4 잔액을 확인하고, `ROLLBACK`한다
    - 제약 위반 6종(테스트 시나리오 9~14)을 각각 한 문장씩 실행하고, 출력된 에러 메시지를 주석으로 붙여 둔다
 
 ## 테스트 시나리오
-"실행"을 mysql CLI에서 돌린 결과가 "기대 결과"와 행 수·값·순서까지 같아야 한다. 금액은 `DECIMAL(19,2)`이므로 `150000.00`처럼 소수 둘째 자리까지 출력된다.
+"실행"을 mysql CLI에서 돌린 결과가 "기대 결과"와 행 수, 값, 순서까지 같아야 한다. 금액은 `DECIMAL(19,2)`이므로 `150000.00`처럼 소수 둘째 자리까지 출력된다.
 
 | # | 준비(Given) | 실행(When) | 기대 결과(Then) |
 |---|---|---|---|
 | 1 | 01, 02 실행 직후 | `SHOW CREATE TABLE account_transaction` | `uk_tx_uuid`, `idx_tx_account_occurred`, `fk_tx_account`, `chk_tx_amount_positive`가 모두 보임 |
 | 2 | 시드 직후 | Q1 | 3행: `110-0000-0001 / 김하나 / 150000.00`, `110-0000-0002 / 이두리 / 30000.00`, `110-0000-0004 / 최네오 / 0.00` |
-| 3 | 시드 직후 | Q2 반열린 구간 버전 / `BETWEEN` 버전 | 반열린 구간: 3행 (tx 1, 2, 3 — 23:59:59 거래 포함, 2/1 00:00:00 제외) / `BETWEEN`: 2행 (tx 1, 2 — tx 3 누락) |
+| 3 | 시드 직후 | Q2 반열린 구간 버전 / `BETWEEN` 버전 | 반열린 구간: 3행 (tx 1, 2, 3: 23:59:59 거래 포함, 2/1 00:00:00 제외) / `BETWEEN`: 2행 (tx 1, 2: tx 3 누락) |
 | 4 | 시드 직후 | Q3 | 4행 (`number` 순): 0001 → 4, 0002 → 2, 0003 → 2, 0004 → 0. INNER JOIN으로 바꾸면 3행 (0004 사라짐) |
 | 5 | 시드 직후 | Q4 | 3행: `DEPOSIT / 2 / 230000.00`, `TRANSFER_OUT / 1 / 50000.00`, `WITHDRAWAL / 1 / 30000.00` |
 | 6 | 시드 직후 | Q5 | 1행: `110-0000-0001 / 80000.00` (0002는 30,000, 0003은 10,000이라 제외) |
@@ -108,13 +108,13 @@ Phase 1 M1-3에서 `Ledger.replayBalance`로 했던 "잔액 = 거래 합계" 검
 | 16 | 15 직후 | 이체 2: 계좌 4 `+1,000,000` 성공 → 계좌 1 `-1,000,000` 실패 → 같은 세션에서 계좌 4 조회 | 두 번째 UPDATE는 `ERROR 3819`. 그 직후 계좌 4 조회 결과 `1020000.00` (실패한 문장만 취소되고 트랜잭션은 열려 있음) |
 | 17 | 16 직후 | `ROLLBACK` 후 계좌 1, 4 조회 | 계좌 1 = 130000.00, 계좌 4 = 20000.00 (15번 상태로 복귀) |
 
-9~14번의 INSERT·UPDATE는 확인하려는 컬럼 하나만 틀리게 하고 나머지 컬럼은 모두 올바른 값으로 채운다. 예를 들어 `owner_id`를 빠뜨리면 `ERROR 1364` Field 'owner_id' doesn't have a default value가 먼저 나서 의도한 에러를 볼 수 없다.
+9~14번의 INSERT, UPDATE는 확인하려는 컬럼 하나만 틀리게 하고 나머지 컬럼은 모두 올바른 값으로 채운다. 예를 들어 `owner_id`를 빠뜨리면 `ERROR 1364` Field 'owner_id' doesn't have a default value가 먼저 나서 의도한 에러를 볼 수 없다.
 
 계산식 (7번): 계좌 1 = 200,000 − 30,000 − 50,000 + 30,000 = 150,000 / 계좌 2 = 50,000 − 30,000 = 20,000 / 계좌 3 = 10,000 − 10,000 = 0.
 
 ## 제약
-- 금액 컬럼에 `FLOAT`/`DOUBLE` 금지 — 2진 부동소수점이라 `0.1 + 0.2`가 정확히 표현되지 않는다. `DECIMAL(19,2)`만 쓴다.
-- 테이블·제약·인덱스 이름은 명세표의 이름을 그대로 쓴다. M5-3의 Flyway 마이그레이션과 M5-9의 락 관찰 결과(`INDEX_NAME`)가 이 이름을 기준으로 한다.
+- 금액 컬럼에 `FLOAT`/`DOUBLE` 금지: 2진 부동소수점이라 `0.1 + 0.2`가 정확히 표현되지 않는다. `DECIMAL(19,2)`만 쓴다.
+- 테이블, 제약, 인덱스 이름은 명세표의 이름을 그대로 쓴다. M5-3의 Flyway 마이그레이션과 M5-9의 락 관찰 결과(`INDEX_NAME`)가 이 이름을 기준으로 한다.
 - `SELECT *` 금지 (Q1~Q7). 결과 컬럼을 명시해야 기대 결과와 비교할 수 있다.
 - Q6에서 서브쿼리 또는 `LEFT JOIN` + `COALESCE` 중 하나를 쓰되, 거래가 0건인 계좌를 결과에서 빠뜨리지 않는다.
 - ORM이나 GUI 도구가 만든 SQL을 붙여 넣지 않는다. 이 미션은 mysql CLI와 텍스트 에디터만 쓴다.

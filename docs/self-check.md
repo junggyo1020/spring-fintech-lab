@@ -8,7 +8,7 @@
 
 ---
 
-## Phase 0 — 개발 환경
+## Phase 0: 개발 환경
 
 - [ ] `sdk install java 21-tem`이 실패하는 이유와, 올바른 식별자를 얻는 명령(`sdk list java`)을 말할 수 있다
 - [ ] `java -version`이 JDK 21이 아닌 버전을 보여줄 때 확인할 명령 2개(`which java`, `sdk current java`)를 말할 수 있다
@@ -22,7 +22,7 @@
 - [ ] `push`와 `pull_request`를 모두 트리거로 둘 때 PR 브랜치에 push하면 워크플로가 몇 번 실행되는지 말할 수 있다
 - [ ] CI에서 `./gradlew: Permission denied`가 나올 때 확인 명령(`git ls-files -s`)과 해결 명령(`git update-index --chmod=+x`)을 말할 수 있다
 
-## Phase 1 — Java 기본기 + TDD
+## Phase 1: Java 기본기 + TDD
 
 ### BigDecimal과 반올림
 - [ ] `(long) (10_000_000 * 0.0003)`의 결과(2999)와 그 이유를 설명할 수 있다
@@ -33,7 +33,7 @@
 - [ ] `new BigDecimal("100.5").setScale(0)`이 던지는 예외와, 이를 `Money.of` 검증에 쓰는 방법을 말할 수 있다
 - [ ] `setScale(-1, RoundingMode.DOWN)`이 하는 일을 예(4,027.38 → 4,020)로 설명할 수 있다
 
-### 값 객체·불변·equals
+### 값 객체, 불변, equals
 - [ ] `record Money(BigDecimal amount, Currency currency)`에서 정규화를 빼면 `HashSet` 테스트가 실패하는 이유를 설명할 수 있다
 - [ ] `equals`만 재정의하고 `hashCode`를 재정의하지 않으면 `HashMap.get`이 실패하는 과정을 버킷 단위로 설명할 수 있다
 - [ ] 불변 객체를 만드는 규칙 6가지를 말할 수 있다
@@ -68,11 +68,11 @@
 - [ ] `./gradlew test jacocoTestReport jacocoTestCoverageVerification`이 하는 일 3가지와 리포트 경로를 말할 수 있다
 - [ ] JaCoCo `LINE` 카운터와 `BRANCH` 카운터의 차이를, 라인 100%인데 버그가 남는 예로 설명할 수 있다
 
-## Phase 2 — Java 동시성
+## Phase 2: Java 동시성
 
-### 원자성·가시성·순서
+### 원자성, 가시성, 순서
 - [ ] `count++`의 바이트코드 명령어(`getfield`, `iconst_1`, `iadd`, `putfield`)를 적고, 스레드 2개가 어느 지점에서 끼어들면 증가 1회가 사라지는지 설명한다 (M2-1)
-- [ ] `volatile`이 보장하는 것(가시성, 변수 1개의 읽기·쓰기 원자성 — `long`/`double` 포함)과 보장하지 않는 것(`count++` 같은 복합 연산)을 각각 예로 든다 (README 3절)
+- [ ] `volatile`이 보장하는 것(가시성, 변수 1개의 읽기, 쓰기 원자성: `long`/`double` 포함)과 보장하지 않는 것(`count++` 같은 복합 연산)을 각각 예로 든다 (README 3절)
 - [ ] `volatile` 없는 `while (!stopped)` 루프가 끝나지 않을 수 있는 이유를 JIT의 읽기 끌어올리기(hoisting)와 happens-before 부재로 설명한다 (M2-1)
 - [ ] happens-before를 만드는 동작 4가지(`volatile` 쓰기→읽기, 모니터 unlock→lock, `Thread.start()`, `Thread.join()`)를 말한다 (README 1절)
 - [ ] 순서 문제의 해결 "도구"와 happens-before "규칙"의 차이를 설명한다 (README 1절)
@@ -119,10 +119,10 @@
 - [ ] 서버를 2대로 늘리면 `ConcurrentHashMap` 멱등성 저장소와 계좌별 `ReentrantLock`이 각각 무엇을 보장하지 못하는지 말한다 (M2-7 → Phase 5~8)
 
 ### 측정
-- [ ] README 6절 성능 측정 규칙(워밍업 3회, 측정 5회, 중앙값, JDK 버전·코어 수·OS 기록)을 말하고, 각 규칙이 없으면 생기는 왜곡을 하나씩 든다
+- [ ] README 6절 성능 측정 규칙(워밍업 3회, 측정 5회, 중앙값, JDK 버전, 코어 수, OS 기록)을 말하고, 각 규칙이 없으면 생기는 왜곡을 하나씩 든다
 - [ ] JMH가 직접 만든 `System.nanoTime()` 측정보다 정확한 이유 하나(죽은 코드 제거 방지 등)를 말한다
 
-## Phase 3 — Spring Core
+## Phase 3: Spring Core
 
 ### IoC / DI
 - [ ] Spring 없이 생성자 주입 컨테이너를 만들 때 필요한 단계 4가지(패키지 스캔 → 생성자 선택 → 파라미터 타입으로 빈 찾기 → 싱글톤 캐시)를 순서대로 말할 수 있다 (확인: M3-1 `MiniContainer` 코드와 대조)
@@ -130,9 +130,9 @@
 - [ ] 인터페이스 타입 주입에서 구현체가 0개일 때와 2개일 때 Spring이 던지는 예외 이름(`NoSuchBeanDefinitionException`, `NoUniqueBeanDefinitionException`)과 2개일 때 해결 수단 2가지(`@Primary`, `@Qualifier`)를 말할 수 있다
 - [ ] 필드 주입 대신 생성자 주입을 쓰는 이유 3가지(불변 필드, Spring 없이 `new`로 테스트, 순환 참조 조기 발견)를 말할 수 있다
 
-### 빈 스코프·라이프사이클
+### 빈 스코프, 라이프사이클
 - [ ] 싱글톤 빈의 콜백 순서 `생성자 → setter 주입 → @PostConstruct → afterPropertiesSet → ContextRefreshedEvent → (close) → @PreDestroy → destroy`를 보지 않고 쓸 수 있다 (확인: M3-3 시나리오 1)
-- [ ] 프로토타입 빈을 싱글톤에 생성자로 주입하면 인스턴스가 몇 개 생기는지, `ObjectProvider.getObject()`를 쓰면 어떻게 달라지는지 말할 수 있다 (확인: M3-3 시나리오 3·4)
+- [ ] 프로토타입 빈을 싱글톤에 생성자로 주입하면 인스턴스가 몇 개 생기는지, `ObjectProvider.getObject()`를 쓰면 어떻게 달라지는지 말할 수 있다 (확인: M3-3 시나리오 3, 4)
 - [ ] 프로토타입 빈의 `@PreDestroy`가 호출되지 않는 이유를 말할 수 있다
 - [ ] 요청별 값을 필드에 저장한 싱글톤 빈이 동시 요청에서 일으키는 결과(다른 요청의 명령 실행, 총액은 보존되지만 계좌별 잔액 불일치)를 예시 숫자로 설명할 수 있다 (확인: `docs/M3-3-singleton-state.md`)
 
@@ -152,11 +152,11 @@
 - [ ] `@ConfigurationProperties` record에 `@Validated`를 붙였을 때 잘못된 값이 언제(애플리케이션 시작 시) 어떤 예외(`BindValidationException`)로 드러나는지 말할 수 있다
 - [ ] `Duration` 설정에 단위 없이 `3`을 쓰면 어떻게 해석되는지(3ms) 말할 수 있다 (확인: M3-6 시나리오 10)
 - [ ] 명령행 인자, 환경 변수, 프로파일별 YAML, 기본 `application.yml`의 우선순위를 높은 순서로 말할 수 있다 (확인: M3-6 시나리오 23)
-- [ ] 순수 단위 테스트, `ApplicationContextRunner`, `@SpringBootTest` 중 어느 것을 쓸지 고르는 기준을 M3-2·M3-6에서 측정한 실행 시간과 함께 말할 수 있다
+- [ ] 순수 단위 테스트, `ApplicationContextRunner`, `@SpringBootTest` 중 어느 것을 쓸지 고르는 기준을 M3-2, M3-6에서 측정한 실행 시간과 함께 말할 수 있다
 - [ ] Spring Boot 4에서 `@MockBean` 대신 쓰는 애노테이션 이름(`@MockitoBean`)과 패키지(`org.springframework.test.context.bean.override.mockito`)를 말할 수 있다
 - [ ] `@SpringBootTest` 컨텍스트 캐시 때문에 테스트 클래스 사이에 싱글톤 빈 상태가 공유되는 것을 예로 들고, 이를 피하는 방법 2가지(테스트별 데이터 대역, `@BeforeEach` 정리)를 말할 수 있다
 
-## Phase 4 — Spring Web, API, 보안
+## Phase 4: Spring Web, API, 보안
 
 - [ ] `curl -v` 출력에서 요청 줄, 요청 헤더, 상태 줄, 응답 헤더, 본문을 각각 짚을 수 있다
 - [ ] 요청이 `DispatcherServlet` → `HandlerMapping` → `HandlerAdapter` → `HandlerMethodArgumentResolver` → 컨트롤러 → `HttpMessageConverter` 순서로 처리되는 과정을 그림 없이 말할 수 있다
@@ -164,14 +164,14 @@
 - [ ] `POST /accounts` 성공 응답이 201과 `Location` 헤더를 돌려주는 이유를 말할 수 있다
 - [ ] `ProblemDetail`의 표준 필드 5개(`type`, `title`, `status`, `detail`, `instance`)와 이 레포가 추가한 `code` 필드의 용도를 말할 수 있다
 - [ ] 같은 `Idempotency-Key`로 (1) 같은 본문 재요청, (2) 다른 본문 요청, (3) 첫 요청 처리 중 재요청이 왔을 때 각각의 응답을 말할 수 있다
-- [ ] 오프셋 페이지네이션이 새 거래가 추가될 때 중복·누락을 만드는 예를 숫자로 들고, 커서 페이지네이션이 이를 막는 이유를 말할 수 있다
+- [ ] 오프셋 페이지네이션이 새 거래가 추가될 때 중복, 누락을 만드는 예를 숫자로 들고, 커서 페이지네이션이 이를 막는 이유를 말할 수 있다
 - [ ] JavaScript `Number.MAX_SAFE_INTEGER`(2^53 − 1) 때문에 금액을 JSON 문자열로 보내는 이유를 예시 숫자로 설명할 수 있다
 - [ ] 401과 403의 차이를 Spring Security가 각각 어느 컴포넌트(`AuthenticationEntryPoint`, `AccessDeniedHandler`)에서 만드는지와 함께 말할 수 있다
 - [ ] 다른 사람의 계좌 조회에 403 대신 404를 돌려주는 이유를 말할 수 있다
 - [ ] 이 API에서 CSRF 보호를 끈 근거(무상태, 쿠키 미사용)와, 쿠키 세션을 쓰면 다시 켜야 하는 이유를 말할 수 있다
 - [ ] MDC에 넣은 요청 ID를 `finally`에서 지워야 하는 이유를 스레드 풀 재사용과 연결해 말할 수 있다
 
-## Phase 5 — SQL, JDBC, JPA, 트랜잭션
+## Phase 5: SQL, JDBC, JPA, 트랜잭션
 
 - [ ] `INNER JOIN`과 `LEFT JOIN`의 결과 행 수가 달라지는 데이터 예를 직접 만들 수 있다
 - [ ] 복합 인덱스 `(account_id, occurred_at)`가 `WHERE occurred_at > ?`만 있는 쿼리에 쓰이지 않는 이유를 말할 수 있다
@@ -188,30 +188,30 @@
 - [ ] InnoDB 데드락 로그에서 두 트랜잭션이 각각 보유한 락과 기다린 락을 찾아 읽을 수 있다
 - [ ] 트랜잭션 안에서 외부 API를 호출하면 커넥션 풀이 고갈되는 과정을 `maximumPoolSize`와 함께 설명할 수 있다
 
-## Phase 6 — 코어뱅킹
+## Phase 6: 코어뱅킹
 
-### 설계·상태 머신
+### 설계, 상태 머신
 - [ ] 계좌 상태 4개(`ACTIVE`, `SUSPENDED`, `DORMANT`, `CLOSED`)와 허용 전이 7개를 보지 않고 쓰고, 표에 없는 전이 3개를 예로 들 수 있다 (확인: M6-1 `state-machine.md`)
 - [ ] 휴면 판정 규칙 `L + 365일 < D`에서 L = 2025-11-10일 때 휴면이 되는 첫 날짜(2026-11-11)를 말할 수 있다 (확인: M6-1 시나리오 4)
 - [ ] 고객 거래내역 테이블 이름을 `transaction`으로 하지 않은 이유(MySQL 키워드)를 말할 수 있다
 
 ### 복식부기
-- [ ] 은행 입장에서 고객예금이 부채인 이유와, 자산·부채·비용 계정의 증가가 각각 차변/대변 중 어디인지 말할 수 있다 (확인: `fintech-domain-facts` 6절)
-- [ ] 이자 10,000원 지급, 원천징수 1,540원 분개의 차변·대변 4줄을 금액까지 쓸 수 있다 (이자비용 10,000 / 고객예금 8,460, 예수소득세 1,400, 예수지방소득세 140)
+- [ ] 은행 입장에서 고객예금이 부채인 이유와, 자산, 부채, 비용 계정의 증가가 각각 차변/대변 중 어디인지 말할 수 있다 (확인: `fintech-domain-facts` 6절)
+- [ ] 이자 10,000원 지급, 원천징수 1,540원 분개의 차변, 대변 4줄을 금액까지 쓸 수 있다 (이자비용 10,000 / 고객예금 8,460, 예수소득세 1,400, 예수지방소득세 140)
 - [ ] 잘못 기록한 분개를 UPDATE하지 않고 반대 분개로 바로잡는 이유를 감사 관점에서 말할 수 있다
-- [ ] 불균형 분개를 팩터리·서비스·DB 트리거 중 어디서 막는지와 각 위치가 막는 경로를 말할 수 있다 (확인: M6-2 `ledger-design.md`)
+- [ ] 불균형 분개를 팩터리, 서비스, DB 트리거 중 어디서 막는지와 각 위치가 막는 경로를 말할 수 있다 (확인: M6-2 `ledger-design.md`)
 
-### 멱등성·동시성
+### 멱등성, 동시성
 - [ ] 멱등 레코드 상태 3개(`IN_PROGRESS`, `COMPLETED`, `FAILED`)와 같은 키 재요청 4가지 경우(처음, 완료+같은 본문, 처리 중, 완료+다른 본문)의 응답 코드를 말할 수 있다 (확인: M6-3 3절)
 - [ ] "SELECT로 확인 후 INSERT"만으로 중복 요청을 막을 수 없는 이유를 두 요청의 실행 순서로 설명할 수 있다
 - [ ] 오래된 `IN_PROGRESS`를 이어받을 때 `owner_token` 비교가 없으면 돈이 두 번 움직이는 순서를 단계별로 말할 수 있다 (확인: M6-3 시나리오 15)
 - [ ] 비밀번호 오류 횟수 증가가 422 응답과 함께 롤백되면 생기는 보안 문제와, 이를 막는 트랜잭션 전파 설정을 말할 수 있다 (확인: M6-4 힌트 1)
 - [ ] 1일 한도 날짜를 JVM 기본 시간대로 구하면 한국 시각 몇 시~몇 시 이체가 전날로 집계되는지 말할 수 있다 (JVM 기본 시간대가 UTC일 때 한국 시각 00:00:00~08:59:59)
 
-### 배치·대사
+### 배치, 대사
 - [ ] `JobInstance`와 `JobExecution`의 차이를 재시작 예시(1,000계좌, 청크 100, 250번째 실패)로 설명하고, 재시작 시 읽는 건수(800)를 말할 수 있다 (확인: M6-5 시나리오 10)
 - [ ] Spring Batch 6의 기본 `JobRepository`가 `ResourcelessJobRepository`라는 것과, 재시작이 필요한 Job에서 JDBC 저장소를 쓰는 이유를 말할 수 있다
-- [ ] 이자 28,767원의 소득세·지방소득세·실지급액(4,020 / 400 / 24,347)을 계산 순서대로 구하고, 15.4%를 한 번에 곱하면 왜 다른지 말할 수 있다 (확인: `fintech-domain-facts` 1절)
+- [ ] 이자 28,767원의 소득세, 지방소득세, 실지급액(4,020 / 400 / 24,347)을 계산 순서대로 구하고, 15.4%를 한 번에 곱하면 왜 다른지 말할 수 있다 (확인: `fintech-domain-facts` 1절)
 - [ ] 대사 규칙 R2에서 `balance`와 분개 합계를 같은 트랜잭션에서 읽어야 하는 이유를 동시 이체 예시로 설명할 수 있다 (확인: M6-6 시나리오 7)
 - [ ] 대사 Job이 불일치를 자동으로 고치지 않는 이유를 말할 수 있다
 
@@ -224,9 +224,9 @@
 - [ ] 인스턴스 2대에서 `ReentrantLock`이 lost update를 막지 못하는 이유와 E1 실험 결과 숫자를 말할 수 있다 (확인: M6-8 `distributed-lock-report.md`)
 - [ ] Redis 락의 lease 만료와 프로세스 정지(`kill -STOP`)가 같은 계좌에 "락 보유자 2명"을 만드는 순서를 설명하고, 펜싱 토큰(`version` 조건부 UPDATE)이 그 쓰기를 거부하는 원리를 말할 수 있다 (확인: M6-8 E4)
 
-## Phase 7 — 증권 매매
+## Phase 7: 증권 매매
 
-- [ ] 예수금, D+2 예수금, 주문가능금액, 보유수량, 매도가능수량의 차이를 매수 주문 1건이 체결·결제될 때까지의 값 변화로 설명할 수 있다
+- [ ] 예수금, D+2 예수금, 주문가능금액, 보유수량, 매도가능수량의 차이를 매수 주문 1건이 체결, 결제될 때까지의 값 변화로 설명할 수 있다
 - [ ] KRX 호가단위 표 7개 구간을 보지 않고 쓰고, 2,001원과 20,010원이 무효인 이유를 말할 수 있다
 - [ ] 가격-시간 우선 원칙과 체결 가격이 대기 주문(resting order)의 가격으로 정해지는 이유를 예시 호가창으로 설명할 수 있다
 - [ ] 홀드와 가수금이 다른 개념인 이유를 말할 수 있다
@@ -238,12 +238,12 @@
 - [ ] 취소 요청과 체결이 경합할 때 이 레포의 규칙상 결과가 어떻게 정해지는지 말할 수 있다
 - [ ] 이벤트 소싱으로 호가창을 복구할 때 스냅샷과 이후 이벤트 재생이 필요한 이유, 재생 결과가 같다는 것을 확인하는 방법을 말할 수 있다
 
-## Phase 8 — 분산 환경과 운영
+## Phase 8: 분산 환경과 운영
 
 - [ ] DB 커밋 후 Kafka 발행 실패, Kafka 발행 후 DB 롤백 두 경우에 각각 어떤 불일치가 생기는지 말할 수 있다
 - [ ] Transactional Outbox가 이중 쓰기 문제를 푸는 방법과, 릴레이가 같은 메시지를 두 번 보낼 수 있는 이유를 말할 수 있다
 - [ ] 멱등 컨슈머가 처리 기록 테이블과 비즈니스 변경을 같은 트랜잭션에 넣어야 하는 이유를 말할 수 있다
-- [ ] Kafka의 순서 보장 범위가 파티션 하나라는 것과 메시지 키를 계좌번호·주문 ID로 정하는 이유를 말할 수 있다
+- [ ] Kafka의 순서 보장 범위가 파티션 하나라는 것과 메시지 키를 계좌번호, 주문 ID로 정하는 이유를 말할 수 있다
 - [ ] 오케스트레이션 Saga와 코레오그래피 Saga의 차이를 상태 관리 위치, 장애 추적, 결합도 기준으로 말할 수 있다
 - [ ] Saga에서 되돌릴 수 없는 단계(체결) 이후 실패를 보상 대신 재시도로 처리하는 이유를 말할 수 있다
 - [ ] 메트릭, 로그, 트레이스가 각각 답하는 질문과 이 레포에서 쓰는 도구(Prometheus, 로그 + MDC, OpenTelemetry)를 짝지을 수 있다

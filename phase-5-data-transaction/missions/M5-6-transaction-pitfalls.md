@@ -1,6 +1,6 @@
 # M5-6 트랜잭션 함정
 
-> 가이드 수준: L2 · 예상 시간: 6~8h · 선행: M5-4
+> 가이드 수준: L2, 예상 시간: 6~8h, 선행: M5-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -16,17 +16,17 @@ M5-4에서 만든 JPA 환경과 Testcontainers를 그대로 쓴다.
 
 ## 요구사항
 1. **실험용 패키지 `lab.bank.txlab`.** 아래 빈을 만든다. 이름은 바꿔도 되지만 역할은 하나씩 분리한다 (전파 실험의 바깥/안쪽 메서드는 **서로 다른 빈**이어야 한다).
-   - `RollbackRuleLab` — 롤백 규칙 실험 (시나리오 1~6)
-   - `SelfInvocationLab` — self-invocation, `private`, package-private 실험 (시나리오 7~8)
-   - `PropagationOuter`, `PropagationInner` — 전파 실험 (시나리오 9~13)
-   - `ReadOnlyLab` — `readOnly` 실험 (시나리오 15~16)
-   - `NotifyingTransferService` + 인터페이스 `NotificationClient` — 외부 호출 실험 (시나리오 17~18)
+   - `RollbackRuleLab`: 롤백 규칙 실험 (시나리오 1~6)
+   - `SelfInvocationLab`: self-invocation, `private`, package-private 실험 (시나리오 7~8)
+   - `PropagationOuter`, `PropagationInner`: 전파 실험 (시나리오 9~13)
+   - `ReadOnlyLab`: `readOnly` 실험 (시나리오 15~16)
+   - `NotifyingTransferService` + 인터페이스 `NotificationClient`: 외부 호출 실험 (시나리오 17~18)
 2. **"입금 1,000"의 정의.** 실험 메서드가 계좌를 바꿀 때는 `JdbcTemplate`으로 `UPDATE account SET balance = balance + 1000 WHERE number = ?` 한 문장을 실행한다 (시나리오 6, 15는 예외로 JPA를 쓴다). 결과는 테스트가 끝난 뒤 새 트랜잭션에서 잔액을 읽어 판정한다.
 3. **실험용 예외.** `lab.bank.txlab.LabCheckedException extends Exception`. unchecked 예외는 `IllegalStateException`을 쓴다.
 4. **트랜잭션 상태 기록.** 각 실험 메서드는 실행 중 `TransactionSynchronizationManager.isActualTransactionActive()` 값을 테스트가 읽을 수 있게 남긴다 (방법 자유: 반환값, 필드, 리스트 등).
 5. **`NotificationClient`.** `void notifyTransfer(TransferResult result)`. 테스트에서는 호출될 때마다 `Thread.sleep(3000)` 하는 구현을 빈으로 등록한다.
-   - `NotifyingTransferService.transferAndNotifyInside(TransferCommand)` — 하나의 `@Transactional` 안에서 M5-4 `JpaTransferEngine.transfer` 호출 후 알림 호출
-   - `NotifyingTransferService.transferAndNotifyAfter(TransferCommand)` — 이체 트랜잭션이 커밋된 뒤 알림 호출 (방법은 직접 고른다)
+   - `NotifyingTransferService.transferAndNotifyInside(TransferCommand)`: 하나의 `@Transactional` 안에서 M5-4 `JpaTransferEngine.transfer` 호출 후 알림 호출
+   - `NotifyingTransferService.transferAndNotifyAfter(TransferCommand)`: 이체 트랜잭션이 커밋된 뒤 알림 호출 (방법은 직접 고른다)
 6. **`NESTED` 실험 (시나리오 13).** Spring Boot가 자동 등록한 트랜잭션 매니저는 `JpaTransactionManager`다. `DataSourceTransactionManager`는 **빈으로 등록하지 않고** 테스트 안에서 `new DataSourceTransactionManager(dataSource)`로 만들어 `TransactionTemplate` 두 개(바깥 `REQUIRED`, 안쪽 `NESTED`)와 함께 쓴다. `PlatformTransactionManager` 빈을 하나 더 등록하면 Boot의 자동 설정 `JpaTransactionManager`가 빠진다.
 7. **커넥션 풀 크기 실험.** 시나리오 11은 `spring.datasource.hikari.maximum-pool-size=1`, 시나리오 17~18은 `=2`로, 둘 다 `spring.datasource.hikari.connection-timeout=1000`을 테스트 클래스의 `@TestPropertySource`로 준다.
 
@@ -57,8 +57,8 @@ M5-4에서 만든 JPA 환경과 Testcontainers를 그대로 쓴다.
 계산식 (17번): 커넥션 2개를 두 요청이 3,000ms씩 점유 → 세 번째 요청은 1,000ms(`connection-timeout`) 안에 커넥션을 얻지 못함 → 성공 2건 × 1,000원 → A = 100,000 − 2,000 = 98,000.
 
 ## 제약
-- 테스트 메서드·클래스에 `@Transactional`을 붙이지 않는다 — 테스트가 연 트랜잭션에 실험 메서드가 참여해 버려 커밋/롤백 결과를 관찰할 수 없다.
-- 시나리오의 결과를 로그로 판단하지 않는다. 잔액·예외 클래스·활성 여부를 assert한다.
+- 테스트 메서드, 클래스에 `@Transactional`을 붙이지 않는다: 테스트가 연 트랜잭션에 실험 메서드가 참여해 버려 커밋/롤백 결과를 관찰할 수 없다.
+- 시나리오의 결과를 로그로 판단하지 않는다. 잔액, 예외 클래스, 활성 여부를 assert한다.
 - 시나리오 17~18은 동시 출발을 위해 Phase 2 README 5절의 `CountDownLatch` 틀을 쓴다. 결과는 스레드별로 성공/예외 클래스를 모아 개수를 assert한다.
 - `NotificationClient` 구현에서 `Thread.sleep` 시간을 줄여 테스트를 빠르게 만들지 않는다. 3,000ms(알림) > 1,000ms(커넥션 대기)라는 관계가 실험의 조건이다.
 
@@ -79,7 +79,7 @@ Spring Framework Reference "Transaction Management" 장의 "Transaction-bound Ev
 
 ## 완료 기준
 - [ ] `./gradlew test --tests "lab.bank.txlab.*"`에서 시나리오 1~18 테스트가 통과한다 (14번은 문서 확인)
-- [ ] `docs/m5-6-propagation.md`에 시나리오 14 표, 시나리오 11·16·17의 실제 예외 클래스·에러 메시지 첫 줄·소요 시간이 있다
+- [ ] `docs/m5-6-propagation.md`에 시나리오 14 표, 시나리오 11, 16, 17의 실제 예외 클래스, 에러 메시지 첫 줄, 소요 시간이 있다
 - [ ] `docs/m5-6-propagation.md`에 "외부 API 호출을 트랜잭션 밖으로 옮기면 생기는 새 문제"(알림 실패 시 이체는 이미 커밋됨)를 3줄 이내로 적었다
 
 ## 생각해볼 질문

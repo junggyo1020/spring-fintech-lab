@@ -1,6 +1,6 @@
 ---
 name: fintech-lab-orchestrator
-description: spring-fintech-lab 커리큘럼 문서 작업 전체(구조 변경 → 미션 작성 → 기술·도메인 검증 → 수정 → 자동 검사)를 에이전트들로 조율한다. "커리큘럼 고도화", "Phase N 미션 전부 만들어줘", "전체 문서 검증하고 고쳐줘", "커리큘럼 업데이트", "버전 올려서 문서 갱신" 같은 여러 문서에 걸친 작업에 반드시 이 스킬을 사용할 것. 미션 1개 수정은 mission-authoring, 학습자 코드 리뷰는 mission-review를 직접 쓴다.
+description: spring-fintech-lab 커리큘럼 문서 작업 전체(구조 변경 → 미션 작성 → 기술, 도메인 검증 → 수정 → 자동 검사)를 에이전트들로 조율한다. "커리큘럼 고도화", "Phase N 미션 전부 만들어줘", "전체 문서 검증하고 고쳐줘", "커리큘럼 업데이트", "버전 올려서 문서 갱신" 같은 여러 문서에 걸친 작업에 반드시 이 스킬을 사용할 것. 미션 1개 수정은 mission-authoring, 학습자 코드 리뷰는 mission-review를 직접 쓴다.
 ---
 
 # Fintech Lab Orchestrator
@@ -33,7 +33,7 @@ curriculum-architect 1명을 실행한다. `docs/curriculum-map.md`가 바뀌면
 ### Phase C: 작성 (팬아웃)
 Phase마다 mission-author를 1명씩 **동시에** 실행한다 (`run_in_background: true`).
 각 프롬프트에 포함할 것: 담당 Phase 번호, 정의 파일 경로, 읽을 파일 목록, 이미 알려진 문제 목록(있으면), 출력 경로.
-Phase끼리는 `docs/curriculum-map.md`의 클래스·미션 이름으로만 연결되므로 동시에 작성해도 충돌하지 않는다.
+Phase끼리는 `docs/curriculum-map.md`의 클래스, 미션 이름으로만 연결되므로 동시에 작성해도 충돌하지 않는다.
 
 ### Phase D: 검증 (팬아웃)
 작성이 모두 끝나면 tech-verifier, domain-verifier를 동시에 실행한다. 대상은 Phase C에서 바뀐 파일 전체.

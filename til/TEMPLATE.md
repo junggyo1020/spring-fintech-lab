@@ -1,4 +1,4 @@
-# YYYY-MM-DD — 주제
+# YYYY-MM-DD: 주제
 
 ## 오늘 한 것
 - 미션: 

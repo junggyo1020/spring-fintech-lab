@@ -1,6 +1,6 @@
 # M5-7 격리 수준 실험실
 
-> 가이드 수준: L2 · 예상 시간: 3~5h · 선행: M5-3
+> 가이드 수준: L2, 예상 시간: 3~5h, 선행: M5-3
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -80,7 +80,7 @@ M5-3에서 만든 Testcontainers 환경으로 자동화 테스트를 만든다. 
 | T1 | 격리 수준 지정; `START TRANSACTION;` `SELECT id FROM account WHERE id > 4 FOR UPDATE;` | | | A: Empty set | A: Empty set |
 | T2 | | | `data_locks` 조회 (README 6절 SQL) | 2행: `TABLE`/`IX`/`GRANTED`, `RECORD`/`PRIMARY`/`X`/`GRANTED`/`supremum pseudo-record` | 1행: `TABLE`/`IX`/`GRANTED` |
 | T3 | | `INSERT` (실험 4의 T2와 같은 문장) | | B: **대기** | B: 즉시 성공 |
-| T4 | | | `data_locks`, `data_lock_waits` 조회 | `data_locks` 4행 — 위 2행 + B의 `TABLE`/`IX`/`GRANTED` + B의 `RECORD`/`PRIMARY`/`LOCK_MODE`에 `INSERT_INTENTION` 포함/`WAITING`/`supremum pseudo-record`. `data_lock_waits` 1행 (요청 = B 트랜잭션, 차단 = A 트랜잭션) | (해당 없음) |
+| T4 | | | `data_locks`, `data_lock_waits` 조회 | `data_locks` 4행: 위 2행 + B의 `TABLE`/`IX`/`GRANTED` + B의 `RECORD`/`PRIMARY`/`LOCK_MODE`에 `INSERT_INTENTION` 포함/`WAITING`/`supremum pseudo-record`. `data_lock_waits` 1행 (요청 = B 트랜잭션, 차단 = A 트랜잭션) | (해당 없음) |
 | T5 | (아무것도 안 함) | | | 10초 후 B: `ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction` | |
 | T6 | `COMMIT;` | `INSERT` 다시 실행 | | B: 성공 | |
 
@@ -94,7 +94,7 @@ M5-3에서 만든 Testcontainers 환경으로 자동화 테스트를 만든다. 
 | T3 | `UPDATE account SET balance = 147000 WHERE id = 1;` (150,000 − 3,000을 애플리케이션이 계산한 값) | | | 1 row affected |
 | T4 | | `UPDATE account SET balance = 145000 WHERE id = 1;` (150,000 − 5,000) | | B: 대기 (A가 레코드 X 락 보유) |
 | T5 | `COMMIT;` | | | B의 UPDATE가 끝남: 1 row affected |
-| T6 | | `COMMIT;` | `SELECT balance` acc1 | **145000.00** — 8,000원이 출금됐는데 잔액은 5,000원만 줄었다. A의 출금 3,000원이 사라짐 |
+| T6 | | `COMMIT;` | `SELECT balance` acc1 | **145000.00**: 8,000원이 출금됐는데 잔액은 5,000원만 줄었다. A의 출금 3,000원이 사라짐 |
 
 변형 6-1 (잠금 읽기로 수정): T1, T2의 SELECT에 `FOR UPDATE`를 붙인다. B의 T2가 대기하고, 이때 C의 `data_locks`는 4행(A: `IX`/`GRANTED`, `PRIMARY`/`X,REC_NOT_GAP`/`1`/`GRANTED`, B: `IX`/`GRANTED`, `PRIMARY`/`X,REC_NOT_GAP`/`1`/`WAITING`)이다. A가 147000으로 UPDATE 후 커밋하면 B의 SELECT가 **147000.00**을 돌려주고, B가 142000으로 UPDATE 후 커밋 → 최종 142000.00.
 변형 6-2 (원자적 UPDATE): A `UPDATE account SET balance = balance - 3000 WHERE id = 1;`, B `UPDATE account SET balance = balance - 5000 WHERE id = 1;` (B는 A 커밋까지 대기) → 최종 142000.00.

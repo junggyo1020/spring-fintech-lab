@@ -1,17 +1,17 @@
 # M1-3 거래내역과 `Ledger`
 
-> 가이드 수준: L1 · 예상 시간: 5~7h · 선행: M1-2
+> 가이드 수준: L1, 예상 시간: 5~7h, 선행: M1-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 입금·출금·이체·취소를 모두 거래내역(`Transaction`)으로 남기고, `Ledger.replayBalance`로 다시 계산한 잔액이 `Account.balance()`와 같다는 것을 테스트로 보여준다.
+- 입금, 출금, 이체, 취소를 모두 거래내역(`Transaction`)으로 남기고, `Ledger.replayBalance`로 다시 계산한 잔액이 `Account.balance()`와 같다는 것을 테스트로 보여준다.
 - 이체 대상 계좌가 `FROZEN`일 때 출금 계좌의 잔액과 거래내역이 하나도 바뀌지 않는 것을 테스트로 보여준다.
 - 고정 `Clock`을 주입해 거래 시각이 정해진 값(`2026-01-15T19:00`)으로 기록되는 것을 테스트로 보여준다.
 - `Collectors.groupingBy`로 거래 유형별 합계 맵을 만든다.
 
 ## 배경
 은행에서 잔액은 거래의 결과이고, 원천 데이터는 거래내역(원장)이다. "잔액 = 모든 거래 금액의 부호 있는 합"이 항상 성립해야 하며, 일 마감 때 두 값을 비교하는 작업을 대사(reconciliation)라고 한다.
-거래내역은 수정·삭제하지 않고 추가만 한다(append-only). 잘못된 거래는 지우지 않고 취소 거래(`REVERSAL`)를 추가해서 바로잡는다. 원거래를 지우면 "누가 언제 무엇을 바로잡았는가"를 감사 때 보여줄 수 없기 때문이다.
+거래내역은 수정, 삭제하지 않고 추가만 한다(append-only). 잘못된 거래는 지우지 않고 취소 거래(`REVERSAL`)를 추가해서 바로잡는다. 원거래를 지우면 "누가 언제 무엇을 바로잡았는가"를 감사 때 보여줄 수 없기 때문이다.
 이체는 출금과 입금 두 건의 기록이 함께 성공하거나 함께 실패해야 한다. 출금만 기록되고 입금이 빠지면 고객 돈이 사라진다.
 M1-2의 `Account`와 예외 계층을 그대로 쓰고, 거래 기록 생성은 새로 만드는 애플리케이션 서비스 `BankService`가 맡는다. 이 `BankService`는 M1-5에서 콘솔 UI와 연결되고, Phase 2에서 여러 스레드가 동시에 호출하는 대상이 된다.
 
@@ -62,7 +62,7 @@ compact constructor 검사 (위반 시 `IllegalArgumentException`. `Transaction`
 - `REVERSAL` 거래: `findById(reversalOf)`로 원거래를 찾아 `-(원거래.type.sign()) × amount`를 더한다. 원거래가 없으면 `IllegalStateException`.
 
 ### 4. `BankService` (애플리케이션 서비스, 패키지 `lab.bank.application`)
-`Account`는 M1-2 그대로 두고 수정하지 않는다. `Account.deposit`/`withdraw`는 잔액만 바꾸고, 거래 ID·거래 시각·`Transaction` 생성은 `BankService`가 한다.
+`Account`는 M1-2 그대로 두고 수정하지 않는다. `Account.deposit`/`withdraw`는 잔액만 바꾸고, 거래 ID, 거래 시각, `Transaction` 생성은 `BankService`가 한다.
 `Clock`과 ID 생성을 엔티티가 아니라 서비스에 두는 이유: `Account`가 시계와 ID 생성기를 알면 엔티티 테스트마다 `Clock`을 준비해야 하고, Phase 5에서 JPA 엔티티로 바꿀 때 엔티티에 외부 의존성이 남는다.
 
 | 시그니처 | 동작 |
@@ -115,7 +115,7 @@ compact constructor 검사 (위반 시 `IllegalArgumentException`. `Transaction`
 | 5 | 1의 상태 | `summary(A)` | 키 2개: `DEPOSIT=KRW 60,000`, `WITHDRAWAL=KRW 20,000` |
 | 6 | 1의 상태 | `sumBy(A, TRANSFER_IN, KRW)` | `Money.won(0)` |
 | 7 | `A` 잔액 50,000, `B` 잔액 0 | `transfer(A, B, 10000원, "용돈")` | `A` 40,000, `B` 10,000, 반환 리스트 2건(`TRANSFER_OUT` `balanceAfter` 40,000 / `TRANSFER_IN` `balanceAfter` 10,000), `A`+`B` = 50,000 |
-| 8 | `A` 잔액 5,000 | `transfer(A, B, 10000원, "")` | `InsufficientBalanceException`, `A` 5,000·`B` 0, `history(A)`·`history(B)` 건수 변화 없음 |
+| 8 | `A` 잔액 5,000 | `transfer(A, B, 10000원, "")` | `InsufficientBalanceException`, `A` 5,000, `B` 0, `history(A)`, `history(B)` 건수 변화 없음 |
 | 9 | `A` 잔액 50,000, `B`를 `freeze()` | `transfer(A, B, 10000원, "")` | `AccountNotActiveException`, `A` 50,000 그대로, `history(A)`에 `TRANSFER_OUT` 없음 |
 | 10 | `A` 잔액 50,000 | `transfer(A, 없는 계좌 110-9999-9999, 10000원, "")` | `AccountNotFoundException`, `A` 50,000 그대로 |
 | 11 | - | `transfer(A, A, 10000원, "")` | `SameAccountTransferException` |
@@ -129,7 +129,7 @@ compact constructor 검사 (위반 시 `IllegalArgumentException`. `Transaction`
 | 19 | - | `Transaction` 생성 시 `amount`가 `Money.won(0)` / `type == REVERSAL`인데 `reversalOf == null` | 각각 `IllegalArgumentException` |
 
 ## 제약
-- `Ledger`에는 수정·삭제 메서드를 만들지 않는다. `history`가 반환한 리스트로 내부 리스트를 바꿀 수 없어야 한다 (시나리오 2).
+- `Ledger`에는 수정, 삭제 메서드를 만들지 않는다. `history`가 반환한 리스트로 내부 리스트를 바꿀 수 없어야 한다 (시나리오 2).
 - `LocalDateTime.now()`(인자 없는 버전)를 운영 코드에 쓰지 않는다. 시각은 주입받은 `Clock`으로만 만든다.
 - `Account`에 `Clock`, `Ledger`, `Transaction` 의존을 추가하지 않는다.
 - 이체 실패 시 출금 계좌만 바뀐 상태로 끝나면 안 된다 (시나리오 8~10). 모든 검사를 끝낸 뒤에 두 계좌를 바꾼다.
@@ -165,7 +165,7 @@ compact constructor 검사 (위반 시 `IllegalArgumentException`. `Transaction`
 - [ ] `git log --oneline`에서 테스트 커밋이 구현 커밋보다 먼저 있다
 
 ## 생각해볼 질문
-1. 거래내역을 수정·삭제하지 않고 취소 거래로 바로잡는 이유를 감사(누가 언제 바꿨는가), 대사(원장 합계와 잔액 비교) 두 관점에서 설명한다.
+1. 거래내역을 수정, 삭제하지 않고 취소 거래로 바로잡는 이유를 감사(누가 언제 바꿨는가), 대사(원장 합계와 잔액 비교) 두 관점에서 설명한다.
 2. `Account.balance()`와 `Ledger.replayBalance()`가 다르면 어느 쪽을 믿어야 하는가? 잔액을 매번 거래내역에서 계산하지 않고 `Account`에 따로 저장하는 이유를 거래 100만 건인 계좌의 잔액 조회 비용으로 설명한다.
-3. `REVERSAL`의 방향을 `TransactionType`만으로 정할 수 없게 만든 설계와, `DEPOSIT_REVERSAL`·`WITHDRAWAL_REVERSAL` 두 상수로 나누는 설계를 비교한다. `replayBalance`가 원거래를 조회해야 하는지가 어떻게 달라지는가?
+3. `REVERSAL`의 방향을 `TransactionType`만으로 정할 수 없게 만든 설계와, `DEPOSIT_REVERSAL`, `WITHDRAWAL_REVERSAL` 두 상수로 나누는 설계를 비교한다. `replayBalance`가 원거래를 조회해야 하는지가 어떻게 달라지는가?
 4. 시나리오 7의 "`A`+`B` 총액 불변"은 Phase 2 동시성 테스트에서 스레드 1,000개가 무작위로 이체한 뒤 검사하는 조건이 된다. 락이 없으면 이 조건이 어떤 순서로 실행될 때 깨지는가?

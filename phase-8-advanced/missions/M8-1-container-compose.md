@@ -1,24 +1,24 @@
 # M8-1 컨테이너 이미지와 Compose 전체 실행
 
-> 가이드 수준: L3 · 예상 시간: 6~8h · 선행: M7-8
+> 가이드 수준: L3, 예상 시간: 6~8h, 선행: M7-8
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - corebank와 trading을 하나의 Gradle 멀티 모듈 프로젝트로 합치고 `./gradlew build` 한 번으로 두 모듈의 테스트를 모두 실행한다
 - 계층형(layered) JAR Dockerfile로 두 서비스의 이미지를 만들고, 소스 한 줄 수정 후 재빌드에서 의존성 레이어가 캐시로 재사용되는 것을 `docker build` 출력의 `CACHED` 줄로 보여준다
-- `compose.yaml` 하나로 MySQL·Redis·Kafka·corebank·trading 5개 컨테이너를 띄우고, 두 서비스의 `/actuator/health`가 120초 안에 200을 돌려주는 것을 스크립트로 증명한다
+- `compose.yaml` 하나로 MySQL, Redis, Kafka, corebank, trading 5개 컨테이너를 띄우고, 두 서비스의 `/actuator/health`가 120초 안에 200을 돌려주는 것을 스크립트로 증명한다
 - M0-3의 GitHub Actions CI에 이미지 빌드와 Compose 기동 스모크 테스트를 추가한다
 
 ## 배경
 Phase 6, 7은 IDE에서 서비스 하나씩 실행했고, MySQL은 `docker run`으로 따로 띄웠다. 운영 환경의 서비스는 "내 노트북에서는 됐다"가 통하지 않는다. JDK 버전, 환경 변수, DB 주소, 기동 순서가 하나라도 다르면 이체 API가 뜨지 않거나, DB 마이그레이션 전에 요청을 받아 500을 돌려준다. 이 미션은 Phase 8의 모든 실험(장애 주입, 부하 테스트)이 같은 환경에서 재현되도록 실행 환경을 코드로 고정한다. M7-8까지 만든 두 서비스를 그대로 컨테이너에 넣는 것이 출발점이다.
 
 ## 요구사항
-1. **멀티 모듈**: README "워크스페이스 만들기" 절대로 `phase-8-advanced/workspace/`를 만든다. `settings.gradle.kts`에 `common`, `corebank`, `trading`을 포함한다. `common`은 비워 두거나 서비스 간 메시지 `record`만 둔다(Spring 의존성 금지). corebank·trading은 서로의 모듈을 의존하지 않는다.
+1. **멀티 모듈**: README "워크스페이스 만들기" 절대로 `phase-8-advanced/workspace/`를 만든다. `settings.gradle.kts`에 `common`, `corebank`, `trading`을 포함한다. `common`은 비워 두거나 서비스 간 메시지 `record`만 둔다(Spring 의존성 금지). corebank, trading은 서로의 모듈을 의존하지 않는다.
 2. **실행 포트와 DB**: corebank는 8081, trading은 8082로 뜬다. MySQL 인스턴스 하나에 스키마 `corebank`, `trading` 두 개를 만들고, 서비스마다 자기 스키마 계정만 쓴다(`corebank_app`은 `trading` 스키마 권한 없음). Flyway 마이그레이션은 서비스 기동 시 자기 스키마에만 실행된다.
 3. **Actuator**: 두 서비스 모두 `spring-boot-starter-actuator`를 추가하고 `/actuator/health`를 노출한다. DB 연결이 끊기면 health는 503(`DOWN`)을 돌려준다. corebank의 health에는 Redis 상태도 포함된다.
 4. **이미지 빌드(주 방식: Dockerfile)**: 모듈마다 `Dockerfile`을 둔다. 빌드된 JAR를 `java -Djarmode=tools -jar application.jar extract --layers --destination extracted`로 풀고, `dependencies` → `spring-boot-loader` → `snapshot-dependencies` → `application` 순서로 레이어를 복사한다(Spring Boot 4.1 레퍼런스 "Dockerfiles" 절). 베이스 이미지는 `eclipse-temurin:21-jre-noble`.
-5. **런타임 설정**: 컨테이너 프로세스는 UID 0이 아닌 사용자로 실행된다. JVM 힙은 `-XX:MaxRAMPercentage=75`로 컨테이너 메모리 제한(`mem_limit: 1g`)에 맞춘다. DB 주소·계정·Kafka 주소는 이미지에 넣지 않고 환경 변수로 받는다.
-6. **보조 방식(비교만)**: `./gradlew :corebank:bootBuildImage`로 Cloud Native Buildpacks 이미지를 한 번 만들어 보고, Dockerfile 이미지와 크기·빌드 시간·셸 유무를 `docs/image-comparison.md` 표로 비교한다. Spring Boot 4.1의 기본 빌더 `paketobuildpacks/builder-noble-java-tiny`로 만든 이미지에는 셸이 없어 Compose healthcheck에서 `curl`을 쓸 수 없다. 이것이 이 미션이 Dockerfile을 주 방식으로 고른 이유다.
+5. **런타임 설정**: 컨테이너 프로세스는 UID 0이 아닌 사용자로 실행된다. JVM 힙은 `-XX:MaxRAMPercentage=75`로 컨테이너 메모리 제한(`mem_limit: 1g`)에 맞춘다. DB 주소, 계정, Kafka 주소는 이미지에 넣지 않고 환경 변수로 받는다.
+6. **보조 방식(비교만)**: `./gradlew :corebank:bootBuildImage`로 Cloud Native Buildpacks 이미지를 한 번 만들어 보고, Dockerfile 이미지와 크기, 빌드 시간, 셸 유무를 `docs/image-comparison.md` 표로 비교한다. Spring Boot 4.1의 기본 빌더 `paketobuildpacks/builder-noble-java-tiny`로 만든 이미지에는 셸이 없어 Compose healthcheck에서 `curl`을 쓸 수 없다. 이것이 이 미션이 Dockerfile을 주 방식으로 고른 이유다.
 7. **Compose**: 아래 `compose.yaml`을 기준으로 두 서비스 항목을 완성한다. 서비스는 `mysql`, `redis`, `kafka`가 `service_healthy`가 된 뒤에 시작한다. M8-1 시점에는 Kafka에 연결하는 코드가 없어도 된다(M8-2부터 사용).
 8. **기동 대기 스크립트**: `scripts/wait-healthy.sh`는 2초 간격으로 `http://localhost:8081/actuator/health`와 `http://localhost:8082/actuator/health`를 호출하고, 둘 다 200이면 경과 초를 출력하고 종료 코드 0, 120초가 지나면 마지막 응답 코드를 출력하고 종료 코드 1로 끝난다.
 9. **CI**: M0-3의 `.github/workflows/ci.yml`에 job 두 개를 추가한다. `build`(`./gradlew build`)가 성공하면 `smoke`가 `docker compose up -d --build` → `scripts/wait-healthy.sh` → 실패 시 `docker compose logs` 출력 → `docker compose down -v` 순서로 실행한다. 레포 루트가 아닌 `phase-8-advanced/workspace`에서 실행되도록 `working-directory`를 지정한다.
@@ -139,7 +139,7 @@ Compose healthcheck의 `start_period` 동안 실패한 검사는 `retries`에 �
 </details>
 
 ## 완료 기준
-- [ ] `./gradlew build`가 corebank·trading 두 모듈의 테스트를 모두 실행하고 성공한다 (출력에 `:corebank:test`, `:trading:test` 태스크가 보인다)
+- [ ] `./gradlew build`가 corebank, trading 두 모듈의 테스트를 모두 실행하고 성공한다 (출력에 `:corebank:test`, `:trading:test` 태스크가 보인다)
 - [ ] `docker compose down -v && docker compose up -d --build && scripts/wait-healthy.sh`가 종료 코드 0으로 끝나고, 경과 시간이 120초 이하다
 - [ ] `docs/compose-verification.md`에 시나리오 7개 이상과 실제 결과가 있다
 - [ ] `docs/image-comparison.md`에 Dockerfile 이미지와 `bootBuildImage` 이미지의 크기(MB), 빌드 시간(초, 캐시 없음/있음), 셸 유무 3개 열이 있다

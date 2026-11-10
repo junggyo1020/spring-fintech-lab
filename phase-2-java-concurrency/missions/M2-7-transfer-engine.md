@@ -1,6 +1,6 @@
 # M2-7 [종합] 스레드 안전한 이체 엔진
 
-> 가이드 수준: L2 · 예상 시간: 8~12h · 선행: M2-4, M2-5, M2-6
+> 가이드 수준: L2, 예상 시간: 8~12h, 선행: M2-4, M2-5, M2-6
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -28,7 +28,7 @@ M2-1~M2-6에서 lost update, 데드락, 무한 대기, 스레드 풀 고갈을 �
    public record TransferResult(String requestId, String outTransactionId, String inTransactionId,
                                 Money fromBalanceAfter, Money toBalanceAfter) { }
    ```
-   - 계좌 등록·개설·입금·출금은 Phase 1 `BankService`의 메서드(`addAccount(Account)`, `openAccount(String, Currency)`, `deposit`, `withdraw`) 이름과 시그니처를 그대로 쓰고, 이체와 같은 계좌 락을 쓴다. 테스트 시나리오처럼 계좌번호를 정해서 만들 때는 `addAccount(Account.open(...))`를 쓴다. 계좌 저장소와 `Ledger`는 엔진 생성 시 넘겨받는다.
+   - 계좌 등록, 개설, 입금, 출금은 Phase 1 `BankService`의 메서드(`addAccount(Account)`, `openAccount(String, Currency)`, `deposit`, `withdraw`) 이름과 시그니처를 그대로 쓰고, 이체와 같은 계좌 락을 쓴다. 테스트 시나리오처럼 계좌번호를 정해서 만들 때는 `addAccount(Account.open(...))`를 쓴다. 계좌 저장소와 `Ledger`는 엔진 생성 시 넘겨받는다.
    - 엔진은 생성자로 `Clock`을 받는다. 거래 시각과 1일 한도의 날짜 계산은 이 `Clock`으로만 한다 (`LocalDateTime.now()` 직접 호출 금지).
    - 테스트용 훅: 생성자로 `TransferHook`을 받는다. 공개 생성자는 아무것도 하지 않는 훅을 넘긴다.
      ```java
@@ -47,9 +47,9 @@ M2-1~M2-6에서 lost update, 데드락, 무한 대기, 스레드 풀 고갈을 �
    7. 검증: 계좌 상태(`AccountNotActiveException`) → 통화(`CurrencyMismatchException`) → 잔액(`InsufficientBalanceException`) → 1일 한도(`DailyTransferLimitExceededException`).
    8. 출금 계좌 `TRANSFER_OUT`, 입금 계좌 `TRANSFER_IN` 거래 2건을 `Ledger`에 추가하고 잔액을 바꾼다. 결과를 `TransferResult`로 반환하고 락을 푼다.
    - 새 예외 2개(`DailyTransferLimitExceededException`, `IdempotencyKeyConflictException`)는 `BankException`을 상속하고 `ErrorCode`에 `DAILY_TRANSFER_LIMIT_EXCEEDED`, `IDEMPOTENCY_KEY_CONFLICT`를 더한다. `LockAcquisitionTimeoutException`과 `LOCK_ACQUISITION_TIMEOUT`은 M2-4에서 만든 것을 재사용한다. 이 미션이 끝나면 `ErrorCode` 상수는 15개다 (M1-2 7개 + M1-3 4개 + M2-4 1개 + M2-5 1개 + 이 미션 2개).
-3. **1일 이체 한도** (이 미션의 규칙으로 정한다. 실제 은행 한도는 상품·고객 등급마다 다르다)
+3. **1일 이체 한도** (이 미션의 규칙으로 정한다. 실제 은행 한도는 상품, 고객 등급마다 다르다)
    - 계좌별로 하루(Asia/Seoul 기준 00:00:00 ~ 23:59:59.999999999) 동안 성공한 `TRANSFER_OUT` 금액 합계가 5,000,000원을 넘을 수 없다. 합계가 정확히 5,000,000원이 되는 이체는 허용한다.
-   - 입금·출금(`deposit`/`withdraw`)과 실패한 이체는 한도에 포함하지 않는다.
+   - 입금, 출금(`deposit`/`withdraw`)과 실패한 이체는 한도에 포함하지 않는다.
    - 날짜는 `LocalDate.now(clock)`(Clock의 zone은 `Asia/Seoul`)으로 정한다. 날짜가 바뀌면 누적 합계는 0부터 다시 센다.
    - 한도 확인과 출금은 출금 계좌 락을 쥔 상태에서 함께 일어나야 한다. 확인과 출금 사이에 같은 계좌의 다른 이체가 끼어들면 안 된다.
 4. **멱등성**
@@ -72,9 +72,9 @@ M2-1~M2-6에서 lost update, 데드락, 무한 대기, 스레드 풀 고갈을 �
 | 1 | 계좌 100개 각 1,000,000원, `new Random(7)`로 만든 명령 10,000개(서로 다른 두 계좌, 금액 1~10,000원 정수) | 가상 스레드 10,000개가 명령 1개씩 동시 실행 | `done.await(30, SECONDS) == true`, 총액 100,000,000원, 모든 잔액 ≥ 0원, 성공 + 실패 = 10,000 |
 | 2 | 1 실행 직후 | 계좌 100개 각각 `Ledger.replayBalance` | 100개 모두 `balanceOf`와 같음 |
 | 3 | 출금 계좌 S 10,000,000원, 입금 계좌 10개 각 0원 | S → 서로 다른 입금 계좌 10개로 1,000,000원씩 동시에 10건 | 성공 5건, `DailyTransferLimitExceededException` 5건, S 5,000,000원, 입금 계좌 잔액 합계 5,000,000원 |
-| 4 | S 10,000,000원 | S→T 4,000,000원, S→T 1,000,000원, S→T 1원을 차례로 | 1·2번째 성공(누적 정확히 5,000,000원), 3번째 `DailyTransferLimitExceededException`, S 5,000,000원 |
+| 4 | S 10,000,000원 | S→T 4,000,000원, S→T 1,000,000원, S→T 1원을 차례로 | 1, 2번째 성공(누적 정확히 5,000,000원), 3번째 `DailyTransferLimitExceededException`, S 5,000,000원 |
 | 5 | S 10,000,000원, Clock `2026-03-01T23:59:59+09:00`, 테스트에서 시각을 바꿀 수 있는 Clock | S→T 5,000,000원 → S→T 1원 → Clock을 `2026-03-02T00:00:00+09:00`으로 변경 → S→T 1,000,000원 | 1번째 성공, 2번째 `DailyTransferLimitExceededException`, 3번째 성공, S 4,000,000원 |
-| 6 | A 1,000,000원, B 0원 | 같은 `requestId`·같은 내용으로 100건 동시 요청 (A→B 10,000원) | A 990,000원, B 10,000원, A의 `TRANSFER_OUT` 1건, 100개 `TransferResult`가 모두 `equals` |
+| 6 | A 1,000,000원, B 0원 | 같은 `requestId`, 같은 내용으로 100건 동시 요청 (A→B 10,000원) | A 990,000원, B 10,000원, A의 `TRANSFER_OUT` 1건, 100개 `TransferResult`가 모두 `equals` |
 | 7 | 6 직후 | 같은 `requestId`, 금액 20,000원으로 요청 | `IdempotencyKeyConflictException`, A 990,000원, B 10,000원 |
 | 8 | A 1,000,000원, 훅이 `requestId = "r-8"`일 때 1초 대기 | 요청 1 시작, 훅 진입을 래치로 확인한 뒤 같은 `"r-8"` 요청 2 실행 | 요청 2가 요청 1 종료 후 반환, 두 결과 `equals`, A의 `TRANSFER_OUT` 1건 |
 | 9 | A, B 각 1,000,000원 | A→B 5,000건, B→A 5,000건(1원씩, `requestId` 모두 다름) 동시 실행 | `done.await(10, SECONDS) == true`, A + B = 2,000,000원 |
@@ -82,7 +82,7 @@ M2-1~M2-6에서 lost update, 데드락, 무한 대기, 스레드 풀 고갈을 �
 | 11 | A, B, C 각 1,000,000원, 훅이 A→B 이체에서 4초 대기 | A→B 시작, 훅 진입 확인 직후 A→C 1원 이체 | A→C가 `LockAcquisitionTimeoutException`, 시작부터 예외까지 3,000ms 이상 3,500ms 미만, 예외 직후 C 잔액 1,000,000원 |
 | 12 | 11 직후 A→B 종료 | 11과 같은 `requestId`로 A→C 1원 재요청 | 성공 (타임아웃은 멱등성 저장 대상이 아님), C 1,000,001원 |
 | 13 | A 1,000,000원 | `transfer(A→A, 1,000원)` | `SameAccountTransferException`, A 1,000,000원, `Ledger`에 A 거래 0건 |
-| 14 | A 1,000원 | `requestId = "r-14"`로 A→B 2,000원 → A에 10,000원 입금 → 같은 `"r-14"`로 A→B 2,000원 | 1·2회차 모두 `InsufficientBalanceException` (2회차는 이체를 다시 실행하지 않음), A 11,000원, `Ledger`에 A의 `TRANSFER_OUT` 0건 |
+| 14 | A 1,000원 | `requestId = "r-14"`로 A→B 2,000원 → A에 10,000원 입금 → 같은 `"r-14"`로 A→B 2,000원 | 1, 2회차 모두 `InsufficientBalanceException` (2회차는 이체를 다시 실행하지 않음), A 11,000원, `Ledger`에 A의 `TRANSFER_OUT` 0건 |
 
 시나리오 3 계산: 1,000,000 × 5 = 5,000,000원(한도와 같으므로 5번째까지 허용) → 6번째부터 누적 6,000,000원 > 5,000,000원이므로 5건 실패. 출금 계좌 잔액이 10,000,000원이라 잔액 부족은 일어나지 않는다. S = 10,000,000 − 5,000,000 = 5,000,000원.
 시나리오 5 계산: 3월 1일 누적 5,000,000원 → 1원 추가 시 5,000,001원 > 한도 → 실패. 3월 2일 누적 0원에서 1,000,000원 → 성공. S = 10,000,000 − 5,000,000 − 1,000,000 = 4,000,000원.

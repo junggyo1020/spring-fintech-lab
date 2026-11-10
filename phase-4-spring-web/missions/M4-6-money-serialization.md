@@ -1,11 +1,11 @@
-# M4-6 금액·날짜 직렬화
+# M4-6 금액, 날짜 직렬화
 
-> 가이드 수준: L2 · 예상 시간: 3~4h · 선행: M4-2
+> 가이드 수준: L2, 예상 시간: 3~4h, 선행: M4-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - 금액을 JSON 숫자로 보냈을 때 JavaScript가 `9007199254740993`을 `9007199254740992`로 읽는 것을 `curl` + `node` 출력으로 보여준다.
-- Jackson 3의 `ValueSerializer`·`ValueDeserializer`로 `Money` ↔ `{"amount":"1000.00","currency":"USD"}` 변환기를 만들고, 경계 입력 10종을 테스트로 검증한다.
+- Jackson 3의 `ValueSerializer`, `ValueDeserializer`로 `Money` ↔ `{"amount":"1000.00","currency":"USD"}` 변환기를 만들고, 경계 입력 10종을 테스트로 검증한다.
 - 거래 시각을 `2026-11-10T14:30:00+09:00`처럼 오프셋이 붙은 ISO-8601 문자열로 내보낸다.
 - 이 변경으로 M4-2~M4-5 테스트의 기대값 중 무엇이 바뀌는지 표로 정리하고 테스트를 고친다.
 
@@ -44,7 +44,7 @@ Spring Boot 4는 Jackson 3를 쓴다. Jackson 2와 다른 점:
 
 - `MoneyJsonSerializer extends ValueSerializer<Money>`, `MoneyJsonDeserializer extends ValueDeserializer<Money>`를 `lab.bank.web.json`에 만들고 `@JacksonComponent`로 등록한다.
 - `Money` 클래스에는 Jackson 애너테이션을 붙이지 않는다. 도메인이 JSON 라이브러리에 의존하지 않게 한다.
-- M4-2의 `MoneyDto`와 `@ValidMoney`를 삭제하고, 요청·응답 DTO의 금액 필드 타입을 `Money`로 바꾼다. JSON 형식은 M4-2와 같다.
+- M4-2의 `MoneyDto`와 `@ValidMoney`를 삭제하고, 요청, 응답 DTO의 금액 필드 타입을 `Money`로 바꾼다. JSON 형식은 M4-2와 같다.
 
 **직렬화 규칙**: `{"amount": "<통화 scale로 맞춘 BigDecimal#toPlainString()>", "currency": "<KRW|USD>"}`. 지수 표기(`1E+3`)를 쓰지 않는다.
 
@@ -53,9 +53,9 @@ Spring Boot 4는 Jackson 3를 쓴다. Jackson 2와 다른 점:
 | 입력 | 결과 |
 |---|---|
 | `money` 값이 객체가 아님 (`"money": "1000"`, `"money": 1000`) | 400 `INVALID_REQUEST_BODY` |
-| `amount` 누락·`null`, 또는 JSON 문자열이 아님 (`"amount": 10000`) | 400 `INVALID_REQUEST_BODY` |
-| `amount`가 M4-2의 정규식·18자리·소수 자리 규칙 위반 (`"-100"`, `"010000"`, `"1e3"`, `""`, KRW `"10000.0"`, USD `"10.123"`) | 400 `INVALID_REQUEST_BODY` |
-| `currency` 누락·`null`·`"KRW"`/`"USD"` 이외 | 400 `INVALID_REQUEST_BODY` |
+| `amount` 누락, `null`, 또는 JSON 문자열이 아님 (`"amount": 10000`) | 400 `INVALID_REQUEST_BODY` |
+| `amount`가 M4-2의 정규식, 18자리, 소수 자리 규칙 위반 (`"-100"`, `"010000"`, `"1e3"`, `""`, KRW `"10000.0"`, USD `"10.123"`) | 400 `INVALID_REQUEST_BODY` |
+| `currency` 누락, `null`, `"KRW"`/`"USD"` 이외 | 400 `INVALID_REQUEST_BODY` |
 | `money` 객체 안의 다른 필드 (`"foo": 1`) | 무시 |
 | `"amount": "0"` | `Money` 생성 성공 (Phase 1 `Money`는 0을 허용). 이후 도메인이 `InvalidAmountException` → 400 `INVALID_AMOUNT` |
 | `"money": null` | 역직렬화기는 호출되지 않는다. DTO의 `@NotNull` → 400 `VALIDATION_FAILED` |
@@ -63,21 +63,21 @@ Spring Boot 4는 Jackson 3를 쓴다. Jackson 2와 다른 점:
 - 숫자 `amount`를 거절하는 이유: 클라이언트가 숫자로 보냈다면 클라이언트 쪽에서 이미 정밀도가 손실됐을 수 있다. 서버가 받아 주면 손실된 값을 정상 값으로 처리하게 된다.
 - `INVALID_REQUEST_BODY`의 `detail`은 `"요청 본문을 읽을 수 없습니다."`로 고정한다. Jackson 예외 메시지(클래스 이름, 입력 일부 포함)를 넣지 않는다.
 
-### 3. 날짜·시각 형식
+### 3. 날짜, 시각 형식
 - `TransactionResponse.occurredAt`, `TransferResponse.executedAt`의 타입을 `OffsetDateTime`으로 바꾼다. 도메인의 `LocalDateTime`(Phase 1, `Asia/Seoul` `Clock` 기준)을 `ZoneId.of("Asia/Seoul")`의 오프셋 `+09:00`으로 변환한다.
 - 출력 예: `"2026-11-10T14:30:00+09:00"`. 나노초가 0이 아니면 소수 초가 붙는다(`"2026-11-10T14:30:00.123+09:00"`). 이 미션의 테스트는 초 단위로 고정한 `Clock`을 쓴다.
 - Jackson 3는 `java.time` 지원이 기본 포함이고, 날짜를 타임스탬프 숫자가 아닌 ISO-8601 문자열로 쓰는 것이 기본값이다. Jackson 2처럼 `JavaTimeModule`을 등록하거나 `WRITE_DATES_AS_TIMESTAMPS`를 끌 필요가 없다.
-- 쿼리 파라미터 `from`·`to`(M4-5)는 `LocalDate` 그대로 둔다.
+- 쿼리 파라미터 `from`, `to`(M4-5)는 `LocalDate` 그대로 둔다.
 
 ### 4. 기대값 변경표
 이 미션 전에 작성한 테스트를 아래 표대로 고친다. 표에 없는 테스트는 수정 없이 통과해야 한다.
 
-| 미션·시나리오 | 이전 기대값 | 바뀐 기대값 |
+| 미션, 시나리오 | 이전 기대값 | 바뀐 기대값 |
 |---|---|---|
 | M4-2 #11, #13~#16, #19, #20 (금액 형식 위반) | `400` (M4-3 이후 `VALIDATION_FAILED`) | `400`, `$.code` = `"INVALID_REQUEST_BODY"`, `$.errors` 없음 |
 | M4-2 #12 (`"0"`) | `400` `VALIDATION_FAILED` | `400`, `$.code` = `"INVALID_AMOUNT"` |
 | M4-3 #9 (KRW `"10000.0"`) | `VALIDATION_FAILED`, `errors[0].code` = `"ValidMoney"` | `INVALID_REQUEST_BODY` |
-| `occurredAt`·`executedAt`을 검증하는 모든 시나리오 (M4-5 #1, #8 등) | `"2026-11-01T09:24:00"` | `"2026-11-01T09:24:00+09:00"` |
+| `occurredAt`, `executedAt`을 검증하는 모든 시나리오 (M4-5 #1, #8 등) | `"2026-11-01T09:24:00"` | `"2026-11-01T09:24:00+09:00"` |
 
 ## 테스트 시나리오
 1~10은 `@JsonTest`로 Jackson 설정만 띄운 테스트(`JacksonTester` 사용), 11~15는 `@SpringBootTest` + `@AutoConfigureMockMvc`. `@JsonTest`를 쓰려면 `testImplementation("org.springframework.boot:spring-boot-starter-jackson-test")`를 추가한다. `@JsonTest`의 패키지는 `org.springframework.boot.test.autoconfigure.json`이다 (Boot 4.1.2에서 확인).
@@ -101,7 +101,7 @@ Spring Boot 4는 Jackson 3를 쓴다. Jackson 2와 다른 점:
 | 15 | `Clock` = `2026-11-10T14:30:00+09:00`, `A` | 입금 1,000 KRW | `$.occurredAt` = `"2026-11-10T14:30:00+09:00"` |
 
 ## 제약
-- `Money`, `Currency`, `Account` 등 도메인 클래스에 `com.fasterxml.jackson.annotation`·`tools.jackson` import를 넣지 않는다.
+- `Money`, `Currency`, `Account` 등 도메인 클래스에 `com.fasterxml.jackson.annotation`, `tools.jackson` import를 넣지 않는다.
 - `spring.jackson.*` 프로퍼티나 `JsonMapper` 전역 설정으로 모든 `BigDecimal`을 문자열로 바꾸지 않는다(`WRITE_BIGDECIMAL_AS_PLAIN`, `NumberSerializer` 전역 교체 등). 금액이 아닌 `BigDecimal`(예: 이자율)까지 영향을 받는다. 변환은 `Money` 타입에만 건다.
 - Jackson 2 패키지(`com.fasterxml.jackson.databind`)를 import하지 않는다. `grep -rn "com.fasterxml.jackson.databind" src` 결과가 0줄이어야 한다.
 

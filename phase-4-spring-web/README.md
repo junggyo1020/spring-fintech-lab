@@ -1,17 +1,17 @@
-# Phase 4 — Spring Web, API 설계, 보안 (3주)
+# Phase 4: Spring Web, API 설계, 보안 (3주)
 
-> 가이드 수준: L2 · 선행: Phase 3 완료 · 이 Phase의 workspace 시작 방법: Phase 3 workspace 복사 + Spring MVC·Spring Security 스타터 추가
+> 가이드 수준: L2, 선행: Phase 3 완료, 이 Phase의 workspace 시작 방법: Phase 3 workspace 복사 + Spring MVC, Spring Security 스타터 추가
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
-- `curl -v` 출력에서 요청 줄·헤더·상태 코드·본문을 구분해 적고, 요청 하나가 `DispatcherServlet` → `HandlerMapping` → `HandlerAdapter` → `HandlerMethodArgumentResolver` → `HttpMessageConverter`를 거치는 순서를 DEBUG 로그 줄로 보여준다.
-- 아래 엔드포인트 표의 API 10개(정지·해제를 따로 셈)를 만들고, 모든 오류를 `ProblemDetail`(RFC 9457) + `code` 필드 형식으로 돌려주며, 400/401/403/404/409/422/503 중 어떤 상태를 쓸지 이 README 2절의 규칙표로 설명한다.
+- `curl -v` 출력에서 요청 줄, 헤더, 상태 코드, 본문을 구분해 적고, 요청 하나가 `DispatcherServlet` → `HandlerMapping` → `HandlerAdapter` → `HandlerMethodArgumentResolver` → `HttpMessageConverter`를 거치는 순서를 DEBUG 로그 줄로 보여준다.
+- 아래 엔드포인트 표의 API 10개(정지, 해제를 따로 셈)를 만들고, 모든 오류를 `ProblemDetail`(RFC 9457) + `code` 필드 형식으로 돌려주며, 400/401/403/404/409/422/503 중 어떤 상태를 쓸지 이 README 2절의 규칙표로 설명한다.
 - 같은 `Idempotency-Key`로 이체 요청이 2번 와도 출금이 1번만 일어남을 테스트로 보여준다.
 - 금액을 문자열로 직렬화하는 이유를 JavaScript `JSON.parse` 결과(9007199254740993 → 9007199254740992)로 보여준다.
-- HTTP Basic + 상태 없는(stateless) `SecurityFilterChain`을 구성하고, 401·403·404(남의 계좌) 응답을 테스트로 구분한다.
+- HTTP Basic + 상태 없는(stateless) `SecurityFilterChain`을 구성하고, 401, 403, 404(남의 계좌) 응답을 테스트로 구분한다.
 
 ## 이 Phase의 결과물
-Phase 3의 도메인·이체 엔진 빈 위에 HTTP API 계층이 올라간다. 저장소는 Phase 3와 같은 메모리 구현이다. DB는 Phase 5에서 붙인다.
+Phase 3의 도메인, 이체 엔진 빈 위에 HTTP API 계층이 올라간다. 저장소는 Phase 3와 같은 메모리 구현이다. DB는 Phase 5에서 붙인다.
 
 ```
 phase-4-spring-web/workspace/
@@ -26,12 +26,12 @@ phase-4-spring-web/workspace/
 │   │   ├── OpsAccountController.java          # M4-3 (계좌 정지/해제)
 │   │   ├── TransferController.java            # M4-4
 │   │   ├── TransactionQueryController.java    # M4-5
-│   │   ├── dto/                 # 요청·응답 record (M4-2~M4-5)
+│   │   ├── dto/                 # 요청, 응답 record (M4-2~M4-5)
 │   │   ├── validation/          # @AccountNumberFormat, @ValidMoney (M4-2)
 │   │   ├── error/               # GlobalExceptionHandler, WebErrorCode (M4-3)
 │   │   ├── idempotency/         # IdempotencyStore (M4-4)
 │   │   ├── pagination/          # 커서 인코딩 (M4-5)
-│   │   ├── json/                # Money 직렬화기·역직렬화기 (M4-6)
+│   │   ├── json/                # Money 직렬화기, 역직렬화기 (M4-6)
 │   │   └── filter/              # RequestIdFilter (M4-8)
 │   └── security/                # SecurityConfig, 401/403 응답 처리 (M4-7)
 └── src/test/java/lab/bank/web/  # @SpringBootTest 통합 테스트(M4-1~M4-7), @WebMvcTest 슬라이스 테스트(M4-8)
@@ -72,7 +72,7 @@ Content-Type: application/json
 
 | 개념 | 금융 API에서 문제가 되는 지점 |
 |---|---|
-| 메서드의 안전성·멱등성 (RFC 9110 9.2절) | GET·PUT·DELETE는 멱등, POST는 멱등이 아니다. 클라이언트가 타임아웃 후 POST 이체를 재시도하면 이중 출금이 된다 → M4-4 |
+| 메서드의 안전성, 멱등성 (RFC 9110 9.2절) | GET, PUT, DELETE는 멱등, POST는 멱등이 아니다. 클라이언트가 타임아웃 후 POST 이체를 재시도하면 이중 출금이 된다 → M4-4 |
 | `Content-Type` / `Accept` | 서버가 `Content-Type: application/json`이 아닌 본문을 받으면 415, `Accept`에 맞는 형식을 만들 수 없으면 406 |
 | 상태 코드 | 클라이언트(앱, 다른 서버)는 본문보다 상태 코드로 먼저 분기한다. 잔액 부족을 200으로 돌려주면 재시도 로직이 잘못 동작한다 |
 
@@ -88,19 +88,19 @@ Content-Type: application/json
 | 403 | 인증은 됐지만 역할(role)이 부족함 | USER가 `/ops/**` 호출 |
 | 404 | 리소스가 없거나, 있지만 요청자의 것이 아님 | 없는 계좌, 남의 계좌 (M4-7) |
 | 409 | 리소스의 `status`(상태) 또는 처리 중인 다른 요청과 충돌 | `FROZEN` 계좌에 입금, 같은 키의 요청이 처리 중 |
-| 422 | 형식·상태는 문제없지만 서버 데이터(잔액·한도·통화·저장된 멱등 요청)와 비교한 규칙 위반 | 잔액 부족, 1일 한도 초과, 통화 불일치, 같은 키에 다른 본문 |
+| 422 | 형식, 상태는 문제없지만 서버 데이터(잔액, 한도, 통화, 저장된 멱등 요청)와 비교한 규칙 위반 | 잔액 부족, 1일 한도 초과, 통화 불일치, 같은 키에 다른 본문 |
 | 503 | 일시적으로 처리 불가, 같은 요청을 재시도하면 성공할 수 있음 | 락 획득 3초 초과 |
 | 500 | 위에 해당하지 않는 예상 못 한 예외 | `NullPointerException` |
 
-성공 응답: 새 리소스를 만들고 그 리소스를 조회하는 URI가 있으면 `201 Created` + `Location` 헤더(RFC 9110 15.3.2절, 10.2.2절). 조회 URI가 없는 입금·출금은 `200 OK`.
+성공 응답: 새 리소스를 만들고 그 리소스를 조회하는 URI가 있으면 `201 Created` + `Location` 헤더(RFC 9110 15.3.2절, 10.2.2절). 조회 URI가 없는 입금, 출금은 `200 OK`.
 
 ### 3. `DispatcherServlet`의 요청 처리 흐름
 Spring MVC는 서블릿 하나(`DispatcherServlet`)가 모든 요청을 받아 아래 순서로 넘긴다.
 
 | 순서 | 구성 요소 | 하는 일 | 이 Phase에서 쓰는 구현체 |
 |---|---|---|---|
-| 0 | 서블릿 필터 (`Filter`) | `DispatcherServlet` 앞에서 요청·응답을 가로챈다 | Spring Security 필터 체인(M4-7), `RequestIdFilter`(M4-8) |
-| 1 | `HandlerMapping` | URL·메서드로 실행할 컨트롤러 메서드를 찾는다 | `RequestMappingHandlerMapping` |
+| 0 | 서블릿 필터 (`Filter`) | `DispatcherServlet` 앞에서 요청, 응답을 가로챈다 | Spring Security 필터 체인(M4-7), `RequestIdFilter`(M4-8) |
+| 1 | `HandlerMapping` | URL, 메서드로 실행할 컨트롤러 메서드를 찾는다 | `RequestMappingHandlerMapping` |
 | 2 | `HandlerAdapter` | 찾은 메서드를 호출할 방법을 안다 | `RequestMappingHandlerAdapter` |
 | 3 | `HandlerMethodArgumentResolver` | 메서드 파라미터 값을 만든다 (`@PathVariable`, `@RequestHeader`, `@RequestBody`) | `PathVariableMethodArgumentResolver`, `RequestResponseBodyMethodProcessor` 등 |
 | 4 | `HttpMessageConverter` | 본문 JSON ↔ 자바 객체 변환 | `JacksonJsonHttpMessageConverter` (Spring Framework 7, Jackson 3 기반) |
@@ -110,21 +110,21 @@ Spring Boot 4는 Jackson 3를 쓴다. 패키지가 `com.fasterxml.jackson`에서
 
 ### 4. 입력 검증 (Bean Validation)
 요청 DTO(`record`)의 컴포넌트에 `@NotBlank`, `@Size`, `@Pattern` 같은 제약을 붙이고 `@Valid @RequestBody`로 받으면, 실패 시 `MethodArgumentNotValidException`이 난다.
-`@PathVariable`·`@RequestParam`에 제약을 직접 붙이면 Spring Framework 6.1부터 내장 메서드 검증이 동작하고 `HandlerMethodValidationException`이 난다.
+`@PathVariable`, `@RequestParam`에 제약을 직접 붙이면 Spring Framework 6.1부터 내장 메서드 검증이 동작하고 `HandlerMethodValidationException`이 난다.
 
 | 검증 위치 | 검사하는 것 | 실패 시 |
 |---|---|---|
 | Bean Validation (DTO) | 형식: 필수값, 길이, 패턴, 금액 소수 자리 | 400 `VALIDATION_FAILED` |
-| 도메인 (`Account`, `TransferEngine`) | 상태·잔액·한도 | 409 / 422 |
+| 도메인 (`Account`, `TransferEngine`) | 상태, 잔액, 한도 | 409 / 422 |
 
-도메인 검증을 컨트롤러로 옮기지 않는다. 컨트롤러는 "DTO → 도메인 호출 → 응답 DTO" 변환만 한다. 같은 규칙이 Phase 5에서 배치·메시지 컨슈머 등 HTTP가 아닌 입구에서도 지켜져야 하기 때문이다.
+도메인 검증을 컨트롤러로 옮기지 않는다. 컨트롤러는 "DTO → 도메인 호출 → 응답 DTO" 변환만 한다. 같은 규칙이 Phase 5에서 배치, 메시지 컨슈머 등 HTTP가 아닌 입구에서도 지켜져야 하기 때문이다.
 
 ### 5. `ProblemDetail` (RFC 9457)
 RFC 9457(2023)은 RFC 7807을 대체한 HTTP API 오류 응답 형식이다. 미디어 타입은 `application/problem+json`이다.
 
 | 멤버 | 의미 (RFC 9457 3.1절) | 이 레포의 값 |
 |---|---|---|
-| `type` | 문제 유형을 식별하는 URI | `urn:problem-type:lab-bank:{code를 소문자·하이픈으로}` 예: `urn:problem-type:lab-bank:insufficient-balance` |
+| `type` | 문제 유형을 식별하는 URI | `urn:problem-type:lab-bank:{code를 소문자, 하이픈으로}` 예: `urn:problem-type:lab-bank:insufficient-balance` |
 | `title` | 유형의 짧은 요약, 같은 유형이면 항상 같은 값 | `잔액 부족` |
 | `status` | HTTP 상태 코드 (숫자) | `422` |
 | `detail` | 이번 발생 건의 설명 | `잔액이 부족합니다. 계좌 110-****-0001` |
@@ -155,7 +155,7 @@ Spring Security는 서블릿 필터 하나(`DelegatingFilterProxy` → `FilterCh
 | 인증됐지만 권한 부족 | `ExceptionTranslationFilter` → `AccessDeniedHandler` | 403 |
 | 남의 계좌 | 컨트롤러 뒤 서비스 계층의 소유자 검사 | 404 |
 
-401·403은 `DispatcherServlet` 앞에서 결정되므로 `@RestControllerAdvice`가 처리하지 못한다. M4-7에서 두 핸들러가 직접 `ProblemDetail` JSON을 쓴다.
+401, 403은 `DispatcherServlet` 앞에서 결정되므로 `@RestControllerAdvice`가 처리하지 못한다. M4-7에서 두 핸들러가 직접 `ProblemDetail` JSON을 쓴다.
 Spring Security 7은 `HttpSecurity`의 `and()`와 `authorizeRequests()`를 제거했다. 람다 DSL(`http.csrf(csrf -> ...)`)과 `authorizeHttpRequests`만 쓴다.
 
 ## 워크스페이스 만들기
@@ -185,7 +185,7 @@ dependencies {
 }
 ```
 
-Spring Boot 4.0에서 `spring-boot-starter-web`은 `spring-boot-starter-webmvc`로 이름이 바뀌었다. 테스트 지원도 기술별 모듈로 나뉘어, `@WebMvcTest`·`@AutoConfigureMockMvc`는 `spring-boot-starter-webmvc-test`를 추가해야 쓸 수 있다(패키지 `org.springframework.boot.webmvc.test.autoconfigure`).
+Spring Boot 4.0에서 `spring-boot-starter-web`은 `spring-boot-starter-webmvc`로 이름이 바뀌었다. 테스트 지원도 기술별 모듈로 나뉘어, `@WebMvcTest`, `@AutoConfigureMockMvc`는 `spring-boot-starter-webmvc-test`를 추가해야 쓸 수 있다(패키지 `org.springframework.boot.webmvc.test.autoconfigure`).
 Phase 3에 `spring-boot-starter` 의존성이 있었다면 지운다. `spring-boot-starter-webmvc`가 포함한다. `spring-boot-starter-aspectj`는 지우지 않는다. `aspectjweaver`(`@Aspect` 애너테이션 포함)를 가져오는 스타터는 이것뿐이라, 지우면 M3-5의 `AuditAspect`가 컴파일되지 않는다 (Boot 4.1.2 `./gradlew dependencies`로 확인).
 Spring Security 스타터는 M4-7에서 추가한다. 처음부터 넣으면 Spring Boot 기본 설정이 모든 경로에 인증을 요구해서 M4-1~M4-6의 모든 요청에 비밀번호가 필요해진다.
 
@@ -205,9 +205,9 @@ logging:
 ## 주차별 계획
 | 주 | 미션 | 개념 학습 범위 |
 |---|---|---|
-| 1주 (12~15h) | M4-1, M4-2, M4-3 | 이 README 1~5절, RFC 9110 9.2·15절, Spring MVC 레퍼런스 "DispatcherServlet"·"Annotated Controllers"·"Validation"·"Error Responses" |
+| 1주 (12~15h) | M4-1, M4-2, M4-3 | 이 README 1~5절, RFC 9110 9.2, 15절, Spring MVC 레퍼런스 "DispatcherServlet", "Annotated Controllers", "Validation", "Error Responses" |
 | 2주 (9~12h) | M4-4, M4-5 | 이 README 6절, Idempotency-Key 드래프트 2절 전체 |
-| 3주 (12~15h) | M4-6, M4-7, M4-8 | Jackson 3 마이그레이션 가이드, 이 README 7절, Spring Security 레퍼런스 "Servlet Applications > Architecture"·"Authentication > Username/Password > Basic"·"Testing" |
+| 3주 (12~15h) | M4-6, M4-7, M4-8 | Jackson 3 마이그레이션 가이드, 이 README 7절, Spring Security 레퍼런스 "Servlet Applications > Architecture", "Authentication > Username/Password > Basic", "Testing" |
 
 ## 미션
 | 미션 | 주제 | 예상 시간 |
@@ -217,27 +217,27 @@ logging:
 | [M4-3](missions/M4-3-error-response.md) | 에러 응답 표준화 | 4~5h |
 | [M4-4](missions/M4-4-transfer-api-idempotency.md) | 이체 API와 `Idempotency-Key` | 5~7h |
 | [M4-5](missions/M4-5-transaction-history-pagination.md) | 거래내역 조회와 커서 페이지네이션 | 4~5h |
-| [M4-6](missions/M4-6-money-serialization.md) | 금액·날짜 직렬화 | 3~4h |
-| [M4-7](missions/M4-7-spring-security.md) | Spring Security 인증·인가 | 5~6h |
+| [M4-6](missions/M4-6-money-serialization.md) | 금액, 날짜 직렬화 | 3~4h |
+| [M4-7](missions/M4-7-spring-security.md) | Spring Security 인증, 인가 | 5~6h |
 | [M4-8](missions/M4-8-api-test-request-tracing.md) | API 테스트와 요청 추적 로그 | 4~5h |
 
 합계 33~42h (주 12h 기준 3주).
 
 ## 읽을거리
-- RFC 9110 HTTP Semantics — 9.2(안전·멱등 메서드), 9.3.1(GET), 9.3.3(POST), 10.2.2(`Location`), 11.6.1(`WWW-Authenticate`), 15.3.2(201), 15.5.1(400), 15.5.2(401), 15.5.4(403), 15.5.5(404), 15.5.10(409), 15.5.16(415), 15.5.21(422), 15.6.4(503)
-- RFC 9112 HTTP/1.1 — 2.1(메시지 형식), 3(요청 줄)
-- RFC 9457 Problem Details for HTTP APIs — 3(멤버 정의), 3.2(확장 멤버), 4(새 문제 유형 정의)
-- draft-ietf-httpapi-idempotency-key-header-08 — 2.1~2.7절
-- Spring Framework Reference, "Web on Servlet Stack > Spring Web MVC" — "DispatcherServlet"(Special Bean Types, Processing), "Annotated Controllers"(Request Mapping, Handler Methods, Validation), "Error Responses", "Filters"
-- Spring Boot Reference, "Testing > Testing Spring Boot Applications" — "Auto-configured Spring MVC Tests", "Testing With a Mock Environment"
-- Spring Boot Wiki, "Spring Boot 4.0 Migration Guide" — Starters, Jackson 3, `@MockBean` 제거 절
+- RFC 9110 HTTP Semantics: 9.2(안전, 멱등 메서드), 9.3.1(GET), 9.3.3(POST), 10.2.2(`Location`), 11.6.1(`WWW-Authenticate`), 15.3.2(201), 15.5.1(400), 15.5.2(401), 15.5.4(403), 15.5.5(404), 15.5.10(409), 15.5.16(415), 15.5.21(422), 15.6.4(503)
+- RFC 9112 HTTP/1.1: 2.1(메시지 형식), 3(요청 줄)
+- RFC 9457 Problem Details for HTTP APIs: 3(멤버 정의), 3.2(확장 멤버), 4(새 문제 유형 정의)
+- draft-ietf-httpapi-idempotency-key-header-08: 2.1~2.7절
+- Spring Framework Reference, "Web on Servlet Stack > Spring Web MVC": "DispatcherServlet"(Special Bean Types, Processing), "Annotated Controllers"(Request Mapping, Handler Methods, Validation), "Error Responses", "Filters"
+- Spring Boot Reference, "Testing > Testing Spring Boot Applications": "Auto-configured Spring MVC Tests", "Testing With a Mock Environment"
+- Spring Boot Wiki, "Spring Boot 4.0 Migration Guide": Starters, Jackson 3, `@MockBean` 제거 절
 - Spring Security Reference (7.x), "Servlet Applications > Architecture", "Servlet Applications > Authentication > Username/Password > Reading the Username & Password > Basic", "Password Storage", "Servlet Applications > Testing > MockMvc Support"
-- Jackson 3.0 릴리스 노트 (jackson-databind 3.0) — 패키지 변경, 기본값 변경 목록
+- Jackson 3.0 릴리스 노트 (jackson-databind 3.0): 패키지 변경, 기본값 변경 목록
 
 ## 완료 기준
 - [ ] `./gradlew test`가 통과하고, M4-1~M4-8 문서의 테스트 시나리오가 전부 테스트 메서드로 있다.
-- [ ] 위 엔드포인트 표의 10개 엔드포인트를 `curl`로 호출한 요청·응답 기록이 `til/phase-4/` 아래 있다.
+- [ ] 위 엔드포인트 표의 10개 엔드포인트를 `curl`로 호출한 요청, 응답 기록이 `til/phase-4/` 아래 있다.
 - [ ] 모든 오류 응답이 `Content-Type: application/problem+json`이고 `type`, `title`, `status`, `detail`, `instance`, `code` 6개 필드를 가진다 (M4-8 테스트로 확인).
-- [ ] 컨트롤러 클래스에 `if`로 잔액·상태·한도를 검사하는 코드가 없다 (도메인으로 위임).
+- [ ] 컨트롤러 클래스에 `if`로 잔액, 상태, 한도를 검사하는 코드가 없다 (도메인으로 위임).
 - [ ] 도메인 클래스(`Account`, `Transaction`)를 컨트롤러 반환 타입으로 쓰지 않는다. `grep -rnE "public Account |ResponseEntity<Account>" src/main/java/lab/bank/web` 결과가 0줄이다.
 - [ ] [레벨 진단](../docs/self-check.md) Phase 4 항목을 말로 설명할 수 있다

@@ -1,6 +1,6 @@
 ---
 name: mission-authoring
-description: spring-fintech-lab의 Phase README와 미션 문서(missions/M*-*.md)를 작성·수정하는 규칙과 템플릿. 미션 문서 작성, 미션 추가, 미션 수정, Phase README 작성, 커리큘럼 구체화, "다음 Phase 미션 만들어줘", "M5-3 문서 고쳐줘" 같은 요청에는 반드시 이 스킬을 사용할 것. 학습자 코드 리뷰(mission-review)나 문서 사실 검증(curriculum-verification)에는 쓰지 않는다.
+description: spring-fintech-lab의 Phase README와 미션 문서(missions/M*-*.md)를 작성, 수정하는 규칙과 템플릿. 미션 문서 작성, 미션 추가, 미션 수정, Phase README 작성, 커리큘럼 구체화, "다음 Phase 미션 만들어줘", "M5-3 문서 고쳐줘" 같은 요청에는 반드시 이 스킬을 사용할 것. 학습자 코드 리뷰(mission-review)나 문서 사실 검증(curriculum-verification)에는 쓰지 않는다.
 ---
 
 # 미션 문서 작성
@@ -11,10 +11,10 @@ description: spring-fintech-lab의 Phase README와 미션 문서(missions/M*-*.m
 
 ## 작성 전에 읽을 파일
 
-1. `docs/curriculum-map.md` — 미션 이름, 선행 관계, 만드는 것, 가이드 수준, 기준 버전. 여기와 다르게 쓰지 않는다.
-2. 해당 Phase의 `README.md`와 이전 Phase의 README·마지막 종합 미션 — 학습자가 이미 만든 클래스 이름을 이어 쓰기 위해
-3. `references/mission-template.md` — 미션 문서 구조
-4. `references/phase-readme-template.md` — Phase README 구조
+1. `docs/curriculum-map.md`: 미션 이름, 선행 관계, 만드는 것, 가이드 수준, 기준 버전. 여기와 다르게 쓰지 않는다.
+2. 해당 Phase의 `README.md`와 이전 Phase의 README, 마지막 종합 미션: 학습자가 이미 만든 클래스 이름을 이어 쓰기 위해
+3. `references/mission-template.md`: 미션 문서 구조
+4. `references/phase-readme-template.md`: Phase README 구조
 5. 금융 규칙(세금, 호가단위, 결제일, 복식부기)이 나오면 `.claude/skills/fintech-domain-facts/SKILL.md`
 
 ## 규칙
@@ -54,7 +54,7 @@ description: spring-fintech-lab의 Phase README와 미션 문서(missions/M*-*.m
 Spring Boot 4.x는 Jackson 3(`tools.jackson` 패키지)을 쓴다. 3.x 기준 블로그 코드를 그대로 옮기지 않는다.
 
 ### 6. 확인한 사실만 쓴다
-버전·세율·법규·API 동작을 쓸 때 확실하지 않으면 공식 문서로 확인한다. 확인하지 못했으면 "이 미션의 규칙으로 정한다"고 명시하고 실제 제도처럼 쓰지 않는다.
+버전, 세율, 법규, API 동작을 쓸 때 확실하지 않으면 공식 문서로 확인한다. 확인하지 못했으면 "이 미션의 규칙으로 정한다"고 명시하고 실제 제도처럼 쓰지 않는다.
 
 ### 7. 미션 간 연결
 각 미션의 "배경"에 이전 미션과의 연결을 한 문장, "생각해볼 질문"에 다음 Phase로 이어지는 질문을 하나 넣는다.

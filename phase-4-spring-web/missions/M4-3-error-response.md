@@ -1,6 +1,6 @@
 # M4-3 에러 응답 표준화
 
-> 가이드 수준: L2 · 예상 시간: 4~5h · 선행: M4-2
+> 가이드 수준: L2, 예상 시간: 4~5h, 선행: M4-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -13,7 +13,7 @@
 오류 응답 형식이 엔드포인트마다 다르면 클라이언트는 응답마다 다른 파싱 코드를 짜야 하고, 새 오류가 생길 때마다 앱 배포가 필요해진다.
 상태 코드를 잘못 고르면 더 큰 사고가 난다. 잔액 부족(재시도해도 실패)을 503(재시도하면 성공 가능)으로 돌려주면 클라이언트의 자동 재시도가 같은 요청을 반복한다.
 예외 메시지를 그대로 응답에 넣으면 전체 계좌번호, 내부 클래스 이름, SQL(Phase 5)이 외부로 나간다.
-M1-2에서 만든 `BankException`·`ErrorCode`를 M4-2의 컨트롤러에 연결해, 도메인 예외가 정해진 HTTP 응답이 되게 한다.
+M1-2에서 만든 `BankException`, `ErrorCode`를 M4-2의 컨트롤러에 연결해, 도메인 예외가 정해진 HTTP 응답이 되게 한다.
 
 ## 요구사항
 
@@ -59,13 +59,13 @@ Content-Type: application/problem+json
 }
 ```
 
-- `field`: 본문 필드는 경로(`money`, `ownerName`), 경로 변수·쿼리 파라미터는 파라미터 이름(`number`, `size`).
+- `field`: 본문 필드는 경로(`money`, `ownerName`), 경로 변수, 쿼리 파라미터는 파라미터 이름(`number`, `size`).
 - `code`: 제약 애너테이션의 단순 이름(`NotBlank`, `Size`, `Pattern`, `NotNull`, `ValidMoney`, `AccountNumberFormat`). 타입 변환 실패(`size=abc`)는 `TypeMismatch`.
 - `message`: Bean Validation 메시지. **로케일에 따라 바뀌므로 테스트에서 비교하지 않는다.** `field`와 `code`만 비교한다.
 - 정렬: `field` 오름차순, 같으면 `code` 오름차순. 같은 (`field`, `code`) 쌍은 1개만 남긴다.
 - `detail`의 숫자 = `errors` 원소 수.
 
-### 3. 매핑표 — 도메인 `ErrorCode` (`lab.bank.common`, M1-2·M1-3·M2-4·M2-5·M2-7에서 만든 enum, 상수 15개)
+### 3. 매핑표: 도메인 `ErrorCode` (`lab.bank.common`, M1-2, M1-3, M2-4, M2-5, M2-7에서 만든 enum, 상수 15개)
 HTTP 상태는 `ErrorCode` enum에 넣지 않는다. 도메인은 HTTP를 모른다. 매핑은 `lab.bank.web.error` 패키지에 둔다.
 
 | `code` | 발생 예외 | 상태 | title | 근거 (README 2절 규칙) |
@@ -88,7 +88,7 @@ HTTP 상태는 `ErrorCode` enum에 넣지 않는다. 도메인은 HTTP를 모른
 - 위 표는 14행이다. M2-5의 `OPTIMISTIC_LOCK_FAILURE`(`OptimisticLockFailureException`)는 일부러 비워 두었다. README 2절 규칙으로 상태를 정해 15번째 행을 추가하고 `til/phase-4/M4-3-error-mapping.md`에 근거를 적는다. 그 밖에 직접 추가한 상수가 있으면 같은 방법으로 행을 추가한다.
 - 거래 취소(`reverse`) API는 이 Phase에서 만들지 않는다. `TRANSACTION_NOT_FOUND`, `TRANSACTION_ALREADY_REVERSED`, `INVALID_REVERSAL`은 시나리오 17의 매핑 테스트로만 확인한다.
 
-### 4. 매핑표 — 웹 계층 코드 (`WebErrorCode` enum, 새로 만든다)
+### 4. 매핑표: 웹 계층 코드 (`WebErrorCode` enum, 새로 만든다)
 
 | `code` | 발생 원인 | 상태 | title | 도입 미션 |
 |---|---|---|---|---|
@@ -102,9 +102,9 @@ HTTP 상태는 `ErrorCode` enum에 넣지 않는다. 도메인은 HTTP를 모른
 | `IDEMPOTENCY_KEY_INVALID` | 헤더 값 형식 오류 | 400 | 멱등 키 형식 오류 | M4-4 |
 | `IDEMPOTENCY_REQUEST_IN_PROGRESS` | 같은 키 요청이 처리 중 | 409 | 같은 요청 처리 중 | M4-4 |
 | `TRANSFER_NOT_FOUND` | 없는 `transferId` 조회 | 404 | 이체 없음 | M4-4 |
-| `INVALID_CURSOR` | 커서 해석 실패·조건 불일치 | 400 | 잘못된 커서 | M4-5 |
+| `INVALID_CURSOR` | 커서 해석 실패, 조건 불일치 | 400 | 잘못된 커서 | M4-5 |
 | `INVALID_DATE_RANGE` | `from` > `to`, 기간 365일 초과 | 400 | 잘못된 조회 기간 | M4-5 |
-| `UNAUTHENTICATED` | 인증 없음·실패 | 401 | 인증 필요 | M4-7 |
+| `UNAUTHENTICATED` | 인증 없음, 실패 | 401 | 인증 필요 | M4-7 |
 | `ACCESS_DENIED` | 역할 부족 | 403 | 권한 없음 | M4-7 |
 
 - 406(`HttpMediaTypeNotAcceptableException`)은 클라이언트가 JSON을 받지 않겠다고 한 경우라 `problem+json` 본문을 강제하지 않는다. 상태 코드만 406이면 된다.
@@ -117,7 +117,7 @@ HTTP 상태는 `ErrorCode` enum에 넣지 않는다. 도메인은 HTTP를 모른
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // BankException, CurrencyMismatchException, Exception 핸들러를 추가하고
-    // Spring MVC 기본 예외(400/404/405/415)의 ProblemDetail에도 code·type·title을 채운다
+    // Spring MVC 기본 예외(400/404/405/415)의 ProblemDetail에도 code, type, title을 채운다
 }
 ```
 
@@ -127,10 +127,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 ### 6. 운영용 엔드포인트 (이 미션에서 추가)
 409를 API로 재현하려면 계좌를 정지할 수 있어야 한다.
 
-| 메서드·경로 | 성공 응답 | 실패 |
+| 메서드, 경로 | 성공 응답 | 실패 |
 |---|---|---|
-| `POST /ops/accounts/{number}/freeze` | `200`, `AccountResponse` (`status` = `"FROZEN"`) | 이미 `FROZEN`·`CLOSED` → 409 `ILLEGAL_STATE_TRANSITION` |
-| `POST /ops/accounts/{number}/unfreeze` | `200`, `AccountResponse` (`status` = `"ACTIVE"`) | `ACTIVE`·`CLOSED` → 409 `ILLEGAL_STATE_TRANSITION` |
+| `POST /ops/accounts/{number}/freeze` | `200`, `AccountResponse` (`status` = `"FROZEN"`) | 이미 `FROZEN`, `CLOSED` → 409 `ILLEGAL_STATE_TRANSITION` |
+| `POST /ops/accounts/{number}/unfreeze` | `200`, `AccountResponse` (`status` = `"ACTIVE"`) | `ACTIVE`, `CLOSED` → 409 `ILLEGAL_STATE_TRANSITION` |
 
 요청 본문은 없다. 이 경로는 M4-7에서 `OPS` 역할만 호출할 수 있게 막는다.
 
@@ -149,7 +149,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 | 8 | 없음 | `POST /accounts` `{"ownerName":"홍길동"}` | `400`, `$.errors.length()` = `1`, `$.errors[0]` = `{field:"currency", code:"NotNull"}` |
 | 9 | `A` (KRW) | 입금 `{"money":{"amount":"10000.0","currency":"KRW"}}` | `400`, `$.errors[0].field` = `"money"`, `$.errors[0].code` = `"ValidMoney"` |
 | 10 | 없음 | `GET /accounts/1101234` | `400`, `$.code` = `"VALIDATION_FAILED"`, `$.errors[0].field` = `"number"`, `$.errors[0].code` = `"AccountNumberFormat"` |
-| 11 | 없음 | `POST /accounts`, 본문 `{"ownerName":"홍길동","currency":"KRW"` | `400`, `$.code` = `"INVALID_REQUEST_BODY"`, `$.detail`에 `"tools.jackson"`·`"Exception"` 미포함 |
+| 11 | 없음 | `POST /accounts`, 본문 `{"ownerName":"홍길동","currency":"KRW"` | `400`, `$.code` = `"INVALID_REQUEST_BODY"`, `$.detail`에 `"tools.jackson"`, `"Exception"` 미포함 |
 | 12 | 없음 | `POST /accounts`, 본문 없음, `Content-Type: application/json` | `400`, `$.code` = `"INVALID_REQUEST_BODY"` |
 | 13 | 없음 | `GET /no-such-path` | `404`, `$.code` = `"RESOURCE_NOT_FOUND"` |
 | 14 | 없음 | `DELETE /accounts/110-0000-0001` | `405`, `$.code` = `"METHOD_NOT_ALLOWED"` |
@@ -162,14 +162,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 ## 제약
 - 컨트롤러 메서드 안에 `try-catch`를 쓰지 않는다. 예외 → 응답 변환은 `GlobalExceptionHandler` 한 곳에서만 한다.
 - `ErrorCode` enum에 `HttpStatus`나 숫자 상태 코드 필드를 넣지 않는다.
-- `IllegalArgumentException`·`IllegalStateException`을 400으로 매핑하지 않는다. 라이브러리 내부 버그도 400이 되어 서버 오류가 클라이언트 잘못으로 숨는다. 이 둘은 500으로 둔다.
+- `IllegalArgumentException`, `IllegalStateException`을 400으로 매핑하지 않는다. 라이브러리 내부 버그도 400이 되어 서버 오류가 클라이언트 잘못으로 숨는다. 이 둘은 500으로 둔다.
 - 예외 메시지(`getMessage()`)를 `detail`로 그대로 쓰지 않는다. Phase 1 예외 메시지에 전체 계좌번호가 들어 있다면 이 미션에서 마스킹 번호로 바꾼다.
 
 ## 힌트
 <details>
 <summary>힌트 1: Spring MVC 기본 예외에 `code` 붙이기</summary>
 
-`ResponseEntityExceptionHandler`에서 모든 기본 예외가 지나가는 protected 메서드가 무엇인지 소스에서 찾는다(`handleExceptionInternal`, `createResponseEntity`). `body`가 `ProblemDetail`이면 거기에 `type`·`title`·`code`를 덮어쓴다. `ProblemDetail#setProperty`로 넣은 값은 JSON 최상위 필드로 나간다.
+`ResponseEntityExceptionHandler`에서 모든 기본 예외가 지나가는 protected 메서드가 무엇인지 소스에서 찾는다(`handleExceptionInternal`, `createResponseEntity`). `body`가 `ProblemDetail`이면 거기에 `type`, `title`, `code`를 덮어쓴다. `ProblemDetail#setProperty`로 넣은 값은 JSON 최상위 필드로 나간다.
 `HandlerMethodValidationException`의 오류 하나하나는 `MessageSourceResolvable`이고, `getCodes()` 배열의 마지막 원소가 제약의 단순 이름이다.
 </details>
 
@@ -182,7 +182,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 ## 완료 기준
 - [ ] `./gradlew test --tests "*ErrorResponse*"`에서 시나리오 19개에 해당하는 테스트가 통과한다.
 - [ ] M4-2의 오류 시나리오(6, 7, 9~17, 19~25번)에 4절 표의 `$.code` 검증을 추가했고 모두 통과한다.
-- [ ] `til/phase-4/M4-3-error-mapping.md`에 3절·4절 표가 있고, 추가한 행이 있으면 근거 열이 채워져 있다.
+- [ ] `til/phase-4/M4-3-error-mapping.md`에 3절, 4절 표가 있고, 추가한 행이 있으면 근거 열이 채워져 있다.
 - [ ] `curl -v localhost:8080/accounts/110-9999-0000` 출력에 `< Content-Type: application/problem+json`이 보인다.
 - [ ] `grep -rn "try {" src/main/java/lab/bank/web/*Controller.java` 결과가 0줄이다.
 

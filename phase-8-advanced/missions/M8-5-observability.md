@@ -1,6 +1,6 @@
 # M8-5 관측성
 
-> 가이드 수준: L3 · 예상 시간: 6~8h · 선행: M8-1
+> 가이드 수준: L3, 예상 시간: 6~8h, 선행: M8-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -14,7 +14,7 @@ M8-4까지 오면 이체 한 건이 HTTP, MySQL, Kafka, 다른 서비스의 컨�
 
 ## 요구사항
 1. **노출**: 두 서비스에 `io.micrometer:micrometer-registry-prometheus`를 추가하고 `management.endpoints.web.exposure.include=health,info,prometheus`로 `/actuator/prometheus`를 노출한다. `management.metrics.distribution.percentiles-histogram.http.server.requests=true`로 HTTP 지연 히스토그램 버킷을 내보낸다.
-2. **이체 메트릭 (corebank)**: 아래 이름·타입·태그를 지킨다. Prometheus 이름은 Micrometer가 점(`.`)을 밑줄로 바꾸고 단위 접미사를 붙인 결과다.
+2. **이체 메트릭 (corebank)**: 아래 이름, 타입, 태그를 지킨다. Prometheus 이름은 Micrometer가 점(`.`)을 밑줄로 바꾸고 단위 접미사를 붙인 결과다.
 
    | Micrometer 이름 | 타입 | 태그 | Prometheus에서 보이는 이름 |
    |---|---|---|---|
@@ -85,7 +85,7 @@ M8-4까지 오면 이체 한 건이 HTTP, MySQL, Kafka, 다른 서비스의 컨�
    | 11 | 비동기 | outbox 미발행 행, 발행 지연 p99 | `outbox_pending`, `histogram_quantile(0.99, sum by (le, job) (rate(outbox_publish_lag_seconds_bucket[1m])))` |
    | 12 | 비동기 | Saga 상태별 수, 정체 | `saga_active`, `saga_stuck` |
 
-   패널 7~10의 메트릭 이름은 HikariCP·Micrometer JVM 바인더가 만드는 이름이다. 직접 `/actuator/prometheus` 출력에서 같은 이름이 있는지 확인하고, 다르면 출력에 있는 이름으로 고친 뒤 차이를 기록한다. Kafka 컨슈머 랙 패널을 13번으로 추가하고 싶다면 출력에서 `kafka_consumer_fetch_manager_records_lag`로 시작하는 이름을 찾아 쓴다.
+   패널 7~10의 메트릭 이름은 HikariCP, Micrometer JVM 바인더가 만드는 이름이다. 직접 `/actuator/prometheus` 출력에서 같은 이름이 있는지 확인하고, 다르면 출력에 있는 이름으로 고친 뒤 차이를 기록한다. Kafka 컨슈머 랙 패널을 13번으로 추가하고 싶다면 출력에서 `kafka_consumer_fetch_manager_records_lag`로 시작하는 이름을 찾아 쓴다.
 7. **트레이싱**: 두 서비스에 `org.springframework.boot:spring-boot-starter-opentelemetry`를 추가하고 아래 설정을 쓴다(Spring Boot 4.1 기준 프로퍼티 이름, 3.x의 `management.otlp.tracing.*`와 다르다).
    ```yaml
    management:
@@ -109,7 +109,7 @@ M8-4까지 오면 이체 한 건이 HTTP, MySQL, Kafka, 다른 서비스의 컨�
 
 ## 직접 작성할 테스트 시나리오
 
-메트릭 이름·태그는 자동 테스트로, 대시보드·트레이스는 수동 검증 절차로 확인한다.
+메트릭 이름, 태그는 자동 테스트로, 대시보드, 트레이스는 수동 검증 절차로 확인한다.
 
 반드시 포함할 경우 (최소 8개):
 - 성공 이체 3건, 잔액 부족 1건, 한도 초과 1건 → `MeterRegistry`에서 `transfer.requests`의 `result`별 값이 3, 1, 1 (테스트 컨텍스트의 `MeterRegistry` 빈 또는 직접 만든 `SimpleMeterRegistry` 사용)
@@ -117,7 +117,7 @@ M8-4까지 오면 이체 한 건이 HTTP, MySQL, Kafka, 다른 서비스의 컨�
 - 다른 트랜잭션이 계좌 행 락을 2초 잡고 있는 동안 이체 → `transfer.lock.wait` 최대값 ≥ 1.9초
 - outbox 미발행 행 5개 → 10초 안에 `outbox.pending` 값 5
 - `/actuator/prometheus` 응답 본문에 `transfer_requests_total{` 와 `transfer_latency_seconds_bucket{` 문자열이 있음 (`@SpringBootTest(webEnvironment = RANDOM_PORT)`. Spring Boot는 테스트에서 메트릭 내보내기를 기본으로 끈다. 엔드포인트가 404면 Spring Boot 4.1 레퍼런스 "Testing Spring Boot Applications" 장에서 observability 자동 구성을 켜는 테스트 어노테이션을 찾아 붙이고, 이름을 `docs/observability.md`에 적는다)
-- 메트릭 태그 키 목록에 계좌번호·주문 ID가 없음 (`MeterRegistry.getMeters()`의 태그 키 전수 검사)
+- 메트릭 태그 키 목록에 계좌번호, 주문 ID가 없음 (`MeterRegistry.getMeters()`의 태그 키 전수 검사)
 - (수동) Compose 기동 후 Prometheus `http://localhost:9090/targets`에서 `corebank`, `trading` 두 타깃이 `UP`
 - (수동) 매수 주문 1건 → Jaeger에서 두 서비스 span이 한 트레이스에 있음, 스크린샷 저장
 
@@ -137,7 +137,7 @@ Micrometer Tracing의 `Propagator`는 헤더 맵에서 span 컨텍스트를 꺼�
 ## 완료 기준
 - [ ] `./gradlew test`에서 이 미션의 자동 테스트 6개 이상이 통과한다
 - [ ] `docker compose down -v && docker compose up -d` 후 Grafana(`http://localhost:3000`)에 수동 조작 없이 패널 12개짜리 대시보드가 있다
-- [ ] 이체 1,000건을 보내는 스크립트(curl 반복 또는 k6) 실행 중 패널 1·5·8에 값이 그려진 스크린샷이 `docs/observability/`에 있다
+- [ ] 이체 1,000건을 보내는 스크립트(curl 반복 또는 k6) 실행 중 패널 1, 5, 8에 값이 그려진 스크린샷이 `docs/observability/`에 있다
 - [ ] Jaeger에서 trading → corebank → trading 세 구간이 한 trace ID로 이어진 스크린샷과 그 trace ID가 찍힌 로그 줄(`docker compose logs`에서 복사)이 `docs/observability.md`에 있다
 - [ ] `docs/observability.md`에 요구사항 6의 메트릭 이름 확인 결과(문서와 실제 이름이 다른 경우 그 차이)가 있다
 

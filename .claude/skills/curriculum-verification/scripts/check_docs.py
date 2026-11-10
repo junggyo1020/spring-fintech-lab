@@ -7,6 +7,7 @@
   ERROR  <details> 열고 닫기 개수 불일치
   ERROR  Phase README 미션 표에 없는 미션 파일 / 존재하지 않는 미션 링크
   WARN   추상 표현 (코드 블록과 인라인 코드는 제외)
+  WARN   가운뎃점 (코드 블록 밖 모든 줄)
 
 사용법
   python3 .claude/skills/curriculum-verification/scripts/check_docs.py            # 레포 전체
@@ -42,7 +43,7 @@ ABSTRACT = [
 
 MISSION_HEADINGS = ["목표", "배경", "요구사항", "테스트 시나리오", "제약", "힌트", "완료 기준", "생각해볼 질문"]
 MISSION_TITLE = re.compile(r"^# M\d-\d+ \S")
-MISSION_META = re.compile(r"^> 가이드 수준: L[123] · 예상 시간: \d+~\d+h · 선행: .+")
+MISSION_META = re.compile(r"^> 가이드 수준: L[123], 예상 시간: \d+~\d+h, 선행: .+")
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 errors, warns = [], []
@@ -83,6 +84,8 @@ def check_file(f):
                 continue
             if not (f.parent / target).resolve().exists():
                 errors.append(f"{rel}:{i}: 깨진 링크 → {target}")
+        if "\u00b7" in line:
+            warns.append(f"{rel}:{i}: 가운뎃점 → 쉼표나 줄 나누기 (writing-rules.md 2절)\n    | {line.strip()[:120]}")
         for pat, fix in ABSTRACT:
             if re.search(pat, plain):
                 warns.append(f"{rel}:{i}: 추상 표현 /{pat}/ → {fix}\n    | {line.strip()[:120]}")
@@ -97,7 +100,7 @@ def check_mission(rel, lines):
         errors.append(f"{rel}:1: 제목이 '# M<P>-<N> <제목>' 형식이 아님")
     meta = next((l for l in lines[1:6] if l.startswith(">")), "")
     if not MISSION_META.match(meta):
-        errors.append(f"{rel}: 메타 줄 형식 오류 (예: '> 가이드 수준: L2 · 예상 시간: 4~6h · 선행: M2-1')")
+        errors.append(f"{rel}: 메타 줄 형식 오류 (예: '> 가이드 수준: L2, 예상 시간: 4~6h, 선행: M2-1')")
     heads = [l[3:].strip() for l in lines if l.startswith("## ")]
     norm = ["테스트 시나리오" if h.endswith("테스트 시나리오") else h for h in heads]
     pos = -1
@@ -132,7 +135,7 @@ def main():
         print("ERROR", e)
     for w in warns:
         print("WARN ", w)
-    print(f"\n검사 파일 {len(files)}개 · ERROR {len(errors)} · WARN {len(warns)}")
+    print(f"\n검사 파일 {len(files)}개, ERROR {len(errors)}, WARN {len(warns)}")
     sys.exit(1 if errors else 0)
 
 

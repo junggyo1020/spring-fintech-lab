@@ -1,6 +1,6 @@
-# Phase 7 — 증권 매매 프로젝트 (4주)
+# Phase 7: 증권 매매 프로젝트 (4주)
 
-> 가이드 수준: L3 · 선행: Phase 6 완료 · 이 Phase의 workspace 시작 방법: Spring Initializr로 새로 생성 (루트 패키지 `lab.trading`, Spring Boot + MySQL)
+> 가이드 수준: L3, 선행: Phase 6 완료, 이 Phase의 workspace 시작 방법: Spring Initializr로 새로 생성 (루트 패키지 `lab.trading`, Spring Boot + MySQL)
 
 코어뱅킹(Phase 6)이 "돈이 생기거나 사라지지 않는가"의 문제였다면, 증권 매매는 여기에 **순서**(누가 먼저 체결되는가)와 **지연시간**(주문 하나를 몇 µs 안에 처리하는가)이 더해진다.
 이 Phase에서는 거래소 1곳의 매칭 엔진과 증권사 계좌를 한 애플리케이션 안에서 시뮬레이션한다.
@@ -9,20 +9,20 @@
 이 Phase를 끝내면 다음을 할 수 있다.
 - 동시 매수 주문 100건 중 예수금 한도 안의 주문만 접수되고 홀드 합계가 미체결 주문의 홀드 합계와 같다는 것을 테스트로 보여준다
 - 가격-시간 우선 원칙으로 동작하는 호가창과 매칭 엔진을 순수 Java로 만들고, 기대 체결 결과가 정해진 시나리오 12개를 통과시킨다
-- 종목별 전용 스레드 매칭 엔진과 락 기반 엔진의 처리량·p99 지연시간을 같은 입력으로 측정해 표로 비교한다
-- 체결 1건이 예수금·D+2 예수금·보유수량·평균단가·실현손익에 반영되는 값을 손 계산 결과와 원 단위까지 일치시킨다
+- 종목별 전용 스레드 매칭 엔진과 락 기반 엔진의 처리량, p99 지연시간을 같은 입력으로 측정해 표로 비교한다
+- 체결 1건이 예수금, D+2 예수금, 보유수량, 평균단가, 실현손익에 반영되는 값을 손 계산 결과와 원 단위까지 일치시킨다
 - 명령 로그를 재생해 재시작 전과 같은 호가창을 만들고, 두 상태의 SHA-256 해시가 같다는 것을 테스트로 보여준다
 
 ## 이 Phase의 범위
 
 | 다룬다 | 다루지 않는다 (이유) |
 |---|---|
-| KRX 정규시장 접속매매(09:00~15:20)만 시뮬레이션 | 장 시작·장 마감 동시호가의 단일가 매매 — 매칭 규칙이 완전히 다르다. 15:20~15:30 주문은 거부한다 |
-| 지정가, 시장가 주문 | 조건부지정가, 최유리·최우선지정가, IOC/FOK 조건 |
-| 원화(KRW), 가격·수량 모두 정수(`long`) | 소수점 주식, 외화 |
+| KRX 정규시장 접속매매(09:00~15:20)만 시뮬레이션 | 장 시작, 장 마감 동시호가의 단일가 매매: 매칭 규칙이 완전히 다르다. 15:20~15:30 주문은 거부한다 |
+| 지정가, 시장가 주문 | 조건부지정가, 최유리, 최우선지정가, IOC/FOK 조건 |
+| 원화(KRW), 가격, 수량 모두 정수(`long`) | 소수점 주식, 외화 |
 | 거래소 1곳 | 대체거래소(NXT)와의 최선집행 |
 | 종목 3개(아래 표), 기준가격 고정 | 일별 기준가격 갱신, 신규상장 종목의 별도 가격제한폭 |
-| 계좌 식별은 요청의 `accountId` | 로그인·인가 — Phase 4에서 다뤘으므로 생략한다 |
+| 계좌 식별은 요청의 `accountId` | 로그인, 인가: Phase 4에서 다뤘으므로 생략한다 |
 
 이 Phase에서 쓰는 종목 (Flyway로 넣는 테스트 데이터, 실제 종목이 아니다):
 
@@ -41,7 +41,7 @@ phase-7-securities-trading/workspace/
 │   ├── engine-design.md          # M7-4: 단일 스레드를 고른 이유, 큐 용량, 장애 시 동작
 │   ├── latency-report.md         # M7-4: 측정표
 │   ├── test-scenarios/M7-*.md    # 미션별 직접 작성한 테스트 시나리오 표 (PR 본문에도 첨부)
-│   └── recovery-report.md        # M7-8: 복구 시간·fsync 모드별 처리량
+│   └── recovery-report.md        # M7-8: 복구 시간, fsync 모드별 처리량
 └── src/main/java/lab/trading/
     ├── domain/order/      # Order, OrderStatus, OrderSide, OrderType, RejectReason, TickSizePolicy, PriceLimitPolicy
     ├── domain/account/    # TradingAccount, Position, HoldCalculator, FeePolicy, TaxPolicy, SettlementItem
@@ -50,10 +50,10 @@ phase-7-securities-trading/workspace/
     ├── engine/journal/    # CommandJournal, SnapshotStore, EngineRecovery (M7-8)
     ├── application/       # OrderService, EngineRegistry, ExecutionHandler, SettlementService, BusinessCalendar
     ├── api/               # OrderController, AccountController
-    └── marketdata/        # STOMP 설정, 호가·체결 브로드캐스트 (M7-7)
+    └── marketdata/        # STOMP 설정, 호가, 체결 브로드캐스트 (M7-7)
 ```
 
-`engine` 패키지(하위 패키지 포함)는 Spring·JPA·`java.time`에 의존하지 않는다. Spring 빈으로 엔진을 띄우는 `EngineRegistry`는 `application`에 둔다. M7-3에서 순수 Java로 만들고 M7-8에서 재생 테스트를 하려면 엔진 안에 외부 상태가 없어야 하기 때문이다.
+`engine` 패키지(하위 패키지 포함)는 Spring, JPA, `java.time`에 의존하지 않는다. Spring 빈으로 엔진을 띄우는 `EngineRegistry`는 `application`에 둔다. M7-3에서 순수 Java로 만들고 M7-8에서 재생 테스트를 하려면 엔진 안에 외부 상태가 없어야 하기 때문이다.
 
 ## 핵심 개념 정리 (미션 전에 읽기)
 
@@ -67,7 +67,7 @@ phase-7-securities-trading/workspace/
 | D+2 예수금 | 예수금 + 결제 예정 내역 합계. 결제일까지 반영한 예상 현금 |
 | 홀드금액 (`holdAmount`) | 미체결 매수 주문이 묶어둔 금액 합계 (5절) |
 | 주문가능금액 | D+2 예수금 − 홀드금액 |
-| 출금가능금액 | max(0, 예수금 − 미결제 매수 결제금액 합계 − 홀드금액) — 이 Phase의 규칙 |
+| 출금가능금액 | max(0, 예수금 − 미결제 매수 결제금액 합계 − 홀드금액): 이 Phase의 규칙 |
 | 보유수량 (`quantity`) | 체결 즉시 늘고 준다 (이 Phase의 규칙: 수량은 체결 기준, 현금만 T+2 결제) |
 | 홀드수량 (`holdQuantity`) | 미체결 매도 주문이 묶어둔 수량 |
 | 매도가능수량 | 보유수량 − 홀드수량 |
@@ -82,7 +82,7 @@ phase-7-securities-trading/workspace/
 | 시장가(`MARKET`) | 넣으면 거부 | 반대편 호가를 좋은 가격부터 소진하며 체결하고, **남은 수량은 즉시 취소한다** (이 Phase의 규칙, IOC와 같은 동작) |
 
 주문 상태는 `RECEIVED`(접수) → `PARTIALLY_FILLED`(부분체결) → `FILLED`(체결완료)로 진행하고, 미체결 수량이 남은 상태에서 `CANCELLED`(취소)로 끝날 수 있다. 검증에 실패한 주문은 처음부터 `REJECTED`(거부)로 저장된다. 전이표는 [M7-1](missions/M7-1-order-domain-tick-size.md)에 있다.
-정정은 상태가 아니다. 정정된 주문은 `RECEIVED` 또는 `PARTIALLY_FILLED`를 유지하고 가격·수량만 바뀐다.
+정정은 상태가 아니다. 정정된 주문은 `RECEIVED` 또는 `PARTIALLY_FILLED`를 유지하고 가격, 수량만 바뀐다.
 
 ### 3. 가격-시간 우선 원칙
 매매 체결은 가격 우선 → 시간 우선으로 정한다(`fintech-domain-facts` §4).
@@ -98,7 +98,7 @@ phase-7-securities-trading/workspace/
 ```
 
 ### 4. 호가가격단위와 가격제한폭
-KRX 주식 호가가격단위 (2023-01-25 시행, 코스피·코스닥 동일, 확인일 2026-11-10):
+KRX 주식 호가가격단위 (2023-01-25 시행, 코스피, 코스닥 동일, 확인일 2026-11-10):
 
 | 주가 구간 | 호가단위 |
 |---|---|
@@ -110,24 +110,24 @@ KRX 주식 호가가격단위 (2023-01-25 시행, 코스피·코스닥 동일, �
 | 200,000원 이상 ~ 500,000원 미만 | 500원 |
 | 500,000원 이상 | 1,000원 |
 
-가격제한폭은 기준가격 대비 ±30%다(2015-06-15 시행). 상한가·하한가를 호가단위에 맞추는 방법은 공식 규정 원문을 확인하지 못했으므로 **이 Phase의 규칙으로 정한다**:
+가격제한폭은 기준가격 대비 ±30%다(2015-06-15 시행). 상한가, 하한가를 호가단위에 맞추는 방법은 공식 규정 원문을 확인하지 못했으므로 **이 Phase의 규칙으로 정한다**:
 - 상한가 = 기준가격 × 1.3을 그 값이 속한 구간의 호가단위로 **내림**
 - 하한가 = 기준가격 × 0.7을 그 값이 속한 구간의 호가단위로 **올림**
 - 예: 기준가격 15,430 → 20,059 → 50원 단위 내림 → 상한가 20,050 / 10,801 → 10원 단위 올림 → 하한가 10,810
 
-### 5. 홀드 (주문가능금액·매도가능수량 차감)
+### 5. 홀드 (주문가능금액, 매도가능수량 차감)
 홀드는 미체결 주문이 쓸 돈과 주식을 미리 묶어 두는 것이다. 홀드가 없으면 예수금 100만 원으로 100만 원짜리 매수 주문을 10건 낼 수 있고, 모두 체결되면 결제일에 900만 원이 부족해진다.
 - 매수 주문의 홀드금액 = 홀드기준가 × 미체결수량 + 수수료(홀드기준가 × 미체결수량). 홀드기준가는 지정가 주문이면 지정가, 시장가 주문이면 상한가다 (이 Phase의 규칙).
 - 매도 주문의 홀드수량 = 미체결수량.
-- 체결·취소·정정이 일어날 때마다 위 식으로 다시 계산하고, 줄어든 만큼 해제한다.
+- 체결, 취소, 정정이 일어날 때마다 위 식으로 다시 계산하고, 줄어든 만큼 해제한다.
 - 홀드는 회계의 "가수금"과 다르다. 가수금은 성격이 확정되지 않은 입금을 임시로 처리하는 회계 계정이고, 주문 홀드를 가리키는 말이 아니다(`fintech-domain-facts` §5).
 
 ### 6. 체결과 결제 (T+2), 수수료와 세금
-체결(execution)은 매수·매도 주문이 가격과 수량에 합의한 사건이고, 결제(settlement)는 현금과 주식이 실제로 오가는 사건이다. KRX 주식은 T+2, 즉 체결일 포함 3영업일째에 결제한다. 월요일 체결 → 수요일 결제, 금요일 체결 → 다음 주 화요일 결제(공휴일 없을 때).
+체결(execution)은 매수, 매도 주문이 가격과 수량에 합의한 사건이고, 결제(settlement)는 현금과 주식이 실제로 오가는 사건이다. KRX 주식은 T+2, 즉 체결일 포함 3영업일째에 결제한다. 월요일 체결 → 수요일 결제, 금요일 체결 → 다음 주 화요일 결제(공휴일 없을 때).
 
 | 항목 | 값 | 근거 |
 |---|---|---|
-| 위탁수수료 | 체결금액 × 0.015%, 원 미만 절사, 매수·매도 모두, 체결 1건마다 | 이 Phase의 규칙 (증권사마다 다르다) |
+| 위탁수수료 | 체결금액 × 0.015%, 원 미만 절사, 매수, 매도 모두, 체결 1건마다 | 이 Phase의 규칙 (증권사마다 다르다) |
 | 증권거래세 + 농어촌특별세 (KOSPI) | 0.05% + 0.15% = 0.20%, 매도만 | `fintech-domain-facts` §2 (2026년 기준, 확인일 2026-11-10) |
 | 증권거래세 (KOSDAQ) | 0.20%, 매도만 | 같은 출처 |
 | 세금 끝수 | 세목별로 각각 원 미만 절사 | 이 Phase의 규칙 |
@@ -218,11 +218,11 @@ docker run -d --name trading-mysql -p 3307:3306 \
 | 미션 | 주제 | 예상 시간 |
 |---|---|---|
 | [M7-1](missions/M7-1-order-domain-tick-size.md) | 주문 도메인과 호가 단위 | 5~6h |
-| [M7-2](missions/M7-2-cash-quantity-hold.md) | 예수금·수량 홀드 | 6~7h |
+| [M7-2](missions/M7-2-cash-quantity-hold.md) | 예수금, 수량 홀드 | 6~7h |
 | [M7-3](missions/M7-3-order-book-matching-engine.md) | 호가창과 매칭 엔진 | 8~9h |
 | [M7-4](missions/M7-4-single-thread-event-loop.md) | 단일 스레드 이벤트 루프 | 5~6h |
-| [M7-5](missions/M7-5-amend-cancel.md) | 정정·취소 | 5~6h |
-| [M7-6](missions/M7-6-execution-settlement.md) | 체결 반영, 평균단가, 수수료·세금, T+2 결제 | 7~8h |
+| [M7-5](missions/M7-5-amend-cancel.md) | 정정, 취소 | 5~6h |
+| [M7-6](missions/M7-6-execution-settlement.md) | 체결 반영, 평균단가, 수수료, 세금, T+2 결제 | 7~8h |
 | [M7-7](missions/M7-7-realtime-websocket.md) | 실시간 시세 WebSocket | 4~5h |
 | [M7-8](missions/M7-8-event-sourcing-recovery.md) | 이벤트 소싱 복구 | 6~7h |
 
@@ -231,18 +231,18 @@ docker run -d --name trading-mysql -p 3307:3306 \
 L3 미션은 구현 전에 `docs/test-scenarios/M7-{N}.md`에 테스트 시나리오 표(# / 준비 / 실행 / 기대 결과)를 먼저 쓰고 리뷰를 받는다. 시나리오 표가 리뷰를 통과하지 않으면 구현 리뷰로 넘어가지 않는다.
 
 ## 읽을거리
-- Martin Fowler, "The LMAX Architecture" (2011) — https://martinfowler.com/articles/lmax.html — "Overall Structure", "Business Logic Processor", "Input and Output Disruptors" 절
-- Thompson 외, "LMAX Disruptor: High performance alternative to bounded queues for exchanging data between concurrent threads" — https://lmax-exchange.github.io/disruptor/disruptor.html — 2절 "The Complexities of Concurrency", 3.3절 "Sequencing"
-- Martin Fowler, "Event Sourcing" — https://martinfowler.com/eaaDev/EventSourcing.html
-- HdrHistogram README "Corrected vs. Raw value recording calls" 절 (요청 간격보다 긴 응답이 측정에서 빠지는 문제) — https://github.com/HdrHistogram/HdrHistogram
-- Spring Framework 레퍼런스, Web on Servlet Stack → WebSockets → "STOMP" 장 — "Enable STOMP", "Simple Broker", "Order of Messages", "STOMP Client", "Performance" 절
-- 한국거래소 법규서비스(https://law.krx.co.kr)의 "유가증권시장 업무규정"과 "유가증권시장 업무규정 시행세칙" — 호가가격단위와 가격제한폭 조항. 이 문서 작성 시 조 번호와 상·하한가 끝수 처리 문구는 확인하지 못했으므로, 직접 찾아 4절의 "이 Phase의 규칙"과 비교해 TIL에 적는다
+- Martin Fowler, "The LMAX Architecture" (2011): https://martinfowler.com/articles/lmax.html: "Overall Structure", "Business Logic Processor", "Input and Output Disruptors" 절
+- Thompson 외, "LMAX Disruptor: High performance alternative to bounded queues for exchanging data between concurrent threads": https://lmax-exchange.github.io/disruptor/disruptor.html: 2절 "The Complexities of Concurrency", 3.3절 "Sequencing"
+- Martin Fowler, "Event Sourcing": https://martinfowler.com/eaaDev/EventSourcing.html
+- HdrHistogram README "Corrected vs. Raw value recording calls" 절 (요청 간격보다 긴 응답이 측정에서 빠지는 문제): https://github.com/HdrHistogram/HdrHistogram
+- Spring Framework 레퍼런스, Web on Servlet Stack → WebSockets → "STOMP" 장: "Enable STOMP", "Simple Broker", "Order of Messages", "STOMP Client", "Performance" 절
+- 한국거래소 법규서비스(https://law.krx.co.kr)의 "유가증권시장 업무규정"과 "유가증권시장 업무규정 시행세칙": 호가가격단위와 가격제한폭 조항. 이 문서 작성 시 조 번호와 상, 하한가 끝수 처리 문구는 확인하지 못했으므로, 직접 찾아 4절의 "이 Phase의 규칙"과 비교해 TIL에 적는다
 
 ## 완료 기준
 - [ ] `./gradlew test`가 통과하고, M7-1~M7-8 각 미션의 완료 기준 체크박스가 모두 체크돼 있다
-- [ ] 동시 매수 100건 테스트에서 접수 14건·거부 86건, 홀드금액 9,801,470원이 10회 반복 실행 모두 같다 (M7-2)
+- [ ] 동시 매수 100건 테스트에서 접수 14건, 거부 86건, 홀드금액 9,801,470원이 10회 반복 실행 모두 같다 (M7-2)
 - [ ] 매칭 엔진 참조 시나리오 12개와 직접 작성한 시나리오 8개 이상이 통과한다 (M7-3)
 - [ ] 모든 통합 테스트 종료 시점에 `계좌 holdAmount == Σ 미체결 매수 주문 홀드 + Σ 처리 대기 중인 정정 예약 홀드`(M7-5), `Σ 매수 체결수량 == Σ 매도 체결수량`이 성립한다
-- [ ] 명령 10만 건 실행 후 전체 재생·스냅샷+꼬리 재생 두 방법으로 복구한 호가창 해시가 원본과 같다 (M7-8)
+- [ ] 명령 10만 건 실행 후 전체 재생, 스냅샷+꼬리 재생 두 방법으로 복구한 호가창 해시가 원본과 같다 (M7-8)
 - [ ] `docs/engine-design.md`에 단일 스레드를 고른 이유, 큐가 가득 찼을 때의 동작, 프로세스 종료 시 복구 방법이 있다
 - [ ] [레벨 진단](../docs/self-check.md) Phase 7 항목을 말로 설명할 수 있다

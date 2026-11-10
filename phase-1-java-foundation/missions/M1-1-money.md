@@ -1,12 +1,12 @@
 # M1-1 `Money` 값 객체
 
-> 가이드 수준: L1 · 예상 시간: 4~6h · 선행: M0-2
+> 가이드 수준: L1, 예상 시간: 4~6h, 선행: M0-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - 통화와 금액을 함께 가진 불변 값 객체 `Money`를 만들고, 테스트 시나리오 22개를 JUnit 5 테스트로 통과시킨다.
 - `Money.of("1000", USD)`와 `Money.of("1000.00", USD)`를 `HashSet`에 넣으면 크기가 1이 되는 것을 테스트로 보여준다.
-- 같은 금액·이율에 `HALF_EVEN`과 `HALF_UP`을 적용했을 때 결과가 달라지는 입력을 `@ParameterizedTest`로 보여준다.
+- 같은 금액, 이율에 `HALF_EVEN`과 `HALF_UP`을 적용했을 때 결과가 달라지는 입력을 `@ParameterizedTest`로 보여준다.
 
 ## 배경
 은행 코드에서 금액은 가장 많이 쓰이는 타입이다. 금액을 `BigDecimal`로만 다루면 원화와 달러를 더하는 코드, `new BigDecimal("1000")`과 `new BigDecimal("1000.00")`을 다른 값으로 판단하는 코드, 곱셈 뒤 반올림을 빠뜨리는 코드가 호출하는 곳마다 생길 수 있다.
@@ -67,9 +67,9 @@ M0-2에서 만든 Gradle 설정과 given/when/then 테스트 구조를 그대로
    - 통화와 정규화된 금액이 같으면 `equals`가 `true`, `hashCode`가 같다.
    - 통화가 다르면 금액이 같아도 `equals`가 `false`다 (`Money.zero(KRW)`와 `Money.zero(USD)`는 다르다).
 
-6. **출력** — `toString()`
+6. **출력**: `toString()`
    - 형식: `"{통화 코드} {천 단위 구분 금액}"`. 예: `"KRW 1,000"`, `"USD 1,000.00"`, `"KRW -500"`.
-   - 구분자는 OS·JVM 기본 Locale과 무관하게 항상 쉼표(`,`)와 점(`.`)이다.
+   - 구분자는 OS, JVM 기본 Locale과 무관하게 항상 쉼표(`,`)와 점(`.`)이다.
 
 ### `CurrencyMismatchException`
 - 이 미션에서는 `RuntimeException`을 상속한다. M1-2에서 `BankException` 계층이 생기면 `BankException`을 상속하도록 바꾼다.
@@ -105,9 +105,9 @@ M0-2에서 만든 Gradle 설정과 given/when/then 테스트 구조를 그대로
 12~15는 `@ParameterizedTest` + `@CsvSource`로 한 메서드에 묶는다. 22는 `@AfterEach`나 `try`/`finally`로 기본 Locale을 되돌려 다른 테스트에 영향을 주지 않게 한다.
 
 ## 제약
-- `double`, `float` 사용 금지 — 2진 부동소수점 오차 (README 핵심 개념 1절).
-- public 생성자 금지 — 정규화와 검증을 건너뛴 `Money`가 만들어지지 않게 정적 팩토리만 연다.
-- `Money`의 금액 필드를 바꾸는 메서드 금지 — 모든 연산은 새 객체를 반환한다.
+- `double`, `float` 사용 금지: 2진 부동소수점 오차 (README 핵심 개념 1절).
+- public 생성자 금지: 정규화와 검증을 건너뛴 `Money`가 만들어지지 않게 정적 팩토리만 연다.
+- `Money`의 금액 필드를 바꾸는 메서드 금지: 모든 연산은 새 객체를 반환한다.
 - `Currency` enum이 `DecimalFormat` 인스턴스를 필드로 갖지 않는다. `DecimalFormat`은 Javadoc에 "Decimal formats are generally not synchronized"라고 적혀 있어, enum 상수처럼 모든 스레드가 공유하는 곳에 두면 Phase 2에서 동시 호출 시 출력이 섞일 수 있다. 패턴 문자열만 갖고, `toString()` 호출마다 `DecimalFormat`을 새로 만든다.
 
 ## 힌트
@@ -134,7 +134,7 @@ M0-2에서 만든 Gradle 설정과 given/when/then 테스트 구조를 그대로
 
 ## 완료 기준
 - [ ] `./gradlew test --tests "lab.bank.money.*"`에서 시나리오 1~22에 해당하는 테스트가 모두 PASSED로 출력된다
-- [ ] `src/main/java/lab/bank/money/`에 `Money`, `Currency`, `CurrencyMismatchException` 3개 파일이 있고, `double`·`float`가 한 번도 나오지 않는다
+- [ ] `src/main/java/lab/bank/money/`에 `Money`, `Currency`, `CurrencyMismatchException` 3개 파일이 있고, `double`, `float`가 한 번도 나오지 않는다
 - [ ] `git log --oneline`에서 `MoneyTest`를 추가한 `[test]` 커밋이 `Money` 구현 커밋보다 먼저 있다
 - [ ] TIL에 `final class`와 `record`로 각각 만들어 본 결과(코드 줄 수, 정규화를 넣은 위치)를 비교한 표가 있다
 

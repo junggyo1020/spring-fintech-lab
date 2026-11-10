@@ -1,6 +1,6 @@
 # M1-4 이자 계산기와 반올림 정책
 
-> 가이드 수준: L1 · 예상 시간: 4~6h · 선행: M1-1
+> 가이드 수준: L1, 예상 시간: 4~6h, 선행: M1-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -64,7 +64,7 @@ public interface InterestPolicy {
 | 지방소득세 | **원천징수한 소득세** × 10% (이자 × 1.4%가 아니다) |
 
 - 계산 순서: 소득세를 먼저 구해 끝수를 버리고, 끝수를 버린 소득세로 지방소득세를 구한다.
-- 이 미션의 규칙: 소득세·지방소득세 각각 10원 미만 절사.
+- 이 미션의 규칙: 소득세, 지방소득세 각각 10원 미만 절사.
 - `record AfterTaxInterest(Money gross, Money incomeTax, Money localIncomeTax, Money net)`
   - `gross` = 세전 이자, `net` = `gross - incomeTax - localIncomeTax`
   - 항상 `gross == incomeTax + localIncomeTax + net`

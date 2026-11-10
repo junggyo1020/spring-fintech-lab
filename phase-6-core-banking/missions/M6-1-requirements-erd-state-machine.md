@@ -1,6 +1,6 @@
-# M6-1 요구사항·ERD·상태 머신 설계
+# M6-1 요구사항, ERD, 상태 머신 설계
 
-> 가이드 수준: L3 · 예상 시간: 5~7h · 선행: M5-9
+> 가이드 수준: L3, 예상 시간: 5~7h, 선행: M5-9
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -20,7 +20,7 @@ Phase 5 M5-9까지는 `lab.bank` 프로젝트 하나에 기능을 더해왔다. 
 2. 업무 규칙(`BR-01`~) 15개 이상. 이 문서 3절의 규칙과 아래 금액 규칙을 반드시 옮겨 적고, 나머지는 학습자가 정한다.
    - 금액은 원화 정수다. 소수점이 있는 금액(`"1000.5"`)은 400으로 거부한다.
    - 거래 금액은 1원 이상 1,000,000,000원 이하다 (이 미션의 규칙). 0원, 음수, 상한 초과는 400으로 거부한다.
-   - 잔액은 0원 미만이 될 수 없다. 출금·이체 출금 후 잔액이 음수가 되는 요청은 422 `INSUFFICIENT_BALANCE`로 거부하고 잔액은 바뀌지 않는다.
+   - 잔액은 0원 미만이 될 수 없다. 출금, 이체 출금 후 잔액이 음수가 되는 요청은 422 `INSUFFICIENT_BALANCE`로 거부하고 잔액은 바뀌지 않는다.
    - 출금계좌와 입금계좌가 같은 당행이체는 422 `SAME_ACCOUNT_TRANSFER`로 거부한다.
 3. 예외 상황(`EX-01`~) 12개 이상. 각 항목은 "조건 / HTTP 상태 / 에러 코드 / 데이터 변화 없음 여부"를 적는다. 400(형식 오류), 404(계좌 없음), 409(멱등 처리 중), 422(업무 규칙 위반)를 모두 1개 이상 포함한다.
 4. 용어 사전: 업무일자, 고객 주도 거래, 정상 잔액 방향, 반대 분개를 이 문서의 정의대로 적는다.
@@ -32,11 +32,11 @@ Mermaid `erDiagram` 코드 블록 1개와, 테이블별 "컬럼 / 타입 / NULL 
 |---|---|
 | `customer` | PK |
 | `product` | 상품 코드 유니크, 연이율 컬럼 `DECIMAL(7,6)` (예: 3.5% → `0.035000`) |
-| `account` | 계좌번호 유니크, `customer_id`·`product_id` FK, `status` NOT NULL, `balance` `DECIMAL(19,0)` NOT NULL, 마지막 고객 주도 거래 시각 컬럼 |
+| `account` | 계좌번호 유니크, `customer_id`, `product_id` FK, `status` NOT NULL, `balance` `DECIMAL(19,0)` NOT NULL, 마지막 고객 주도 거래 시각 컬럼 |
 | `account_status_history` | `account_id` FK, 변경 전 상태(최초 개설 시 NULL), 변경 후 상태, 사유 코드, 변경 시각 |
-| `ledger_account` (계정과목) | 계정 코드 유니크, 계정 유형(자산·부채·자본·수익·비용), 정상 잔액 방향(차변·대변) |
+| `ledger_account` (계정과목) | 계정 코드 유니크, 계정 유형(자산, 부채, 자본, 수익, 비용), 정상 잔액 방향(차변, 대변) |
 | `journal_entry` (분개) | 업무일자, 분개 유형, 반대 분개 대상 `reversal_of_entry_id` 유니크(NULL 허용) |
-| `journal_line` (분개 라인) | `journal_entry_id`·`ledger_account_id` FK, 고객 계좌 `account_id`(NULL 허용), 차변/대변 구분, 금액 `DECIMAL(19,0)` |
+| `journal_line` (분개 라인) | `journal_entry_id`, `ledger_account_id` FK, 고객 계좌 `account_id`(NULL 허용), 차변/대변 구분, 금액 `DECIMAL(19,0)` |
 | `account_transaction` (고객용 거래내역) | `account_id` FK, 거래 유형, 금액, 거래 후 잔액, 업무일자, 연결된 `journal_entry_id` |
 | `idempotency_record` | (`customer_id`, `idempotency_key`) 복합 유니크 |
 | `transfer_limit` | `account_id` 유니크, 1회 한도, 1일 한도 |
@@ -46,7 +46,7 @@ Mermaid `erDiagram` 코드 블록 1개와, 테이블별 "컬럼 / 타입 / NULL 
 - M6-4 이후 미션이 테이블을 추가할 때는 `V2__`, `V3__` 마이그레이션으로 추가하고 `erd.md`도 같은 커밋에서 고친다.
 
 ### 3. 계좌 상태 머신 `workspace/docs/state-machine.md`
-아래 상태·전이·허용 거래 규칙은 **이 미션의 규칙**이다(실제 은행의 휴면·정지 제도를 옮긴 것이 아니다). `state-machine.md`에 그대로 옮기고 Mermaid `stateDiagram-v2`로 그린다.
+아래 상태, 전이, 허용 거래 규칙은 **이 미션의 규칙**이다(실제 은행의 휴면, 정지 제도를 옮긴 것이 아니다). `state-machine.md`에 그대로 옮기고 Mermaid `stateDiagram-v2`로 그린다.
 
 상태 4개: `ACTIVE`(정상), `SUSPENDED`(정지), `DORMANT`(휴면), `CLOSED`(해지). 계좌 개설 시 상태는 `ACTIVE`다.
 
@@ -57,7 +57,7 @@ Mermaid `erDiagram` 코드 블록 1개와, 테이블별 "컬럼 / 타입 / NULL 
 | T3 | `SUSPENDED` → `ACTIVE` | 관리자 해제 요청. 비밀번호 오류 횟수를 0으로 만든다 | `ADMIN_RESUME` |
 | T4 | `ACTIVE` → `DORMANT` | 휴면 판정 규칙(아래)을 만족 | `DORMANCY` |
 | T5 | `DORMANT` → `ACTIVE` | 고객의 휴면 해제 요청 | `DORMANCY_RELEASE` |
-| T6 | `ACTIVE` → `CLOSED` | 고객의 해지 요청, 잔액 0원, 진행 중인 타행이체(`REQUESTED`·`SENT`·`UNKNOWN`) 0건 | `CUSTOMER_CLOSE` |
+| T6 | `ACTIVE` → `CLOSED` | 고객의 해지 요청, 잔액 0원, 진행 중인 타행이체(`REQUESTED`, `SENT`, `UNKNOWN`) 0건 | `CUSTOMER_CLOSE` |
 | T7 | (없음) → `ACTIVE` | 계좌 개설 | `OPEN` |
 
 - 표에 없는 전이(예: `SUSPENDED` → `CLOSED`, `DORMANT` → `CLOSED`, `CLOSED` → 무엇이든, `SUSPENDED` → `DORMANT`)는 422 `INVALID_STATUS_TRANSITION`으로 거부하고, 상태와 이력은 바뀌지 않는다.
@@ -78,7 +78,7 @@ Mermaid `erDiagram` 코드 블록 1개와, 테이블별 "컬럼 / 타입 / NULL 
 | 이체 입금 (입금계좌로서) | 허용 | 허용 | 거부 | 거부 |
 | 현금 출금, 이체 출금 | 허용 | 거부 | 거부 | 거부 |
 | 이자 지급 (M6-5) | 허용 | 허용 | 허용 | 거부 |
-| 잔액·거래내역 조회 | 허용 | 허용 | 허용 | 허용 |
+| 잔액, 거래내역 조회 | 허용 | 허용 | 허용 | 허용 |
 
 ### 4. 코드
 1. Flyway `src/main/resources/db/migration/V1__init_schema.sql`: 2절의 테이블과 제약 전부.
@@ -101,9 +101,9 @@ Mermaid `erDiagram` 코드 블록 1개와, 테이블별 "컬럼 / 타입 / NULL 
 8. Flyway 마이그레이션이 Testcontainers MySQL 8.4에 적용되고, `idempotency_record`에 같은 (`customer_id`, `idempotency_key`)를 2번 INSERT하면 두 번째가 실패하는 경우
 
 ## 제약
-- 상태 값을 문자열 리터럴로 비교하지 않는다(`"ACTIVE".equals(...)` 금지) — 오타가 컴파일 오류로 잡히지 않는다.
-- JPA `ddl-auto`는 `validate`만 쓴다 — 스키마의 원본은 Flyway 마이그레이션 하나여야 한다.
-- 현재 날짜를 `LocalDate.now()`로 직접 읽지 않는다. 기준일은 메서드 인자나 주입받은 `Clock`으로 받는다 — 휴면 경계 테스트를 날짜에 상관없이 반복 실행하기 위해서다.
+- 상태 값을 문자열 리터럴로 비교하지 않는다(`"ACTIVE".equals(...)` 금지): 오타가 컴파일 오류로 잡히지 않는다.
+- JPA `ddl-auto`는 `validate`만 쓴다: 스키마의 원본은 Flyway 마이그레이션 하나여야 한다.
+- 현재 날짜를 `LocalDate.now()`로 직접 읽지 않는다. 기준일은 메서드 인자나 주입받은 `Clock`으로 받는다: 휴면 경계 테스트를 날짜에 상관없이 반복 실행하기 위해서다.
 - 이 미션에서 MySQL 트리거, 저장 프로시저를 만들지 않는다(M6-2에서 분개 테이블 트리거만 만든다).
 
 ## 힌트

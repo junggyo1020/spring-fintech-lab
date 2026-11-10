@@ -1,10 +1,10 @@
-# Phase 1 — 금융 도메인을 위한 Java 기본기 + TDD (3주)
+# Phase 1: 금융 도메인을 위한 Java 기본기 + TDD (3주)
 
-> 가이드 수준: L1 · 선행: Phase 0 완료 · 이 Phase의 workspace 시작 방법: 빈 디렉터리에서 직접 생성
+> 가이드 수준: L1, 선행: Phase 0 완료, 이 Phase의 workspace 시작 방법: 빈 디렉터리에서 직접 생성
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
-- `BigDecimal`과 `RoundingMode`로 금액·이자·세금을 계산하고, 기대값을 Python `decimal`이나 손 계산으로 구해 테스트에 넣는다.
+- `BigDecimal`과 `RoundingMode`로 금액, 이자, 세금을 계산하고, 기대값을 Python `decimal`이나 손 계산으로 구해 테스트에 넣는다.
 - 생성 시점에 규칙을 검사하는 불변 값 객체(`Money`, `AccountNumber`)를 만들고, `equals`/`hashCode` 계약을 `HashSet` 테스트로 보여준다.
 - 잔액이 음수가 되는 출금, 해지 계좌 입금 같은 규칙 위반을 도메인 예외로 막고, 예외가 난 뒤에도 잔액이 바뀌지 않았음을 테스트로 보여준다.
 - 테스트를 먼저 커밋하고 구현을 나중에 커밋하는 순서를 미션 5개 모두에서 git 이력으로 남긴다.
@@ -26,7 +26,7 @@ phase-1-java-foundation/workspace/src/main/java/lab/bank/
 └── console/      BankConsoleApp, InputView, OutputView, MenuController           (M1-5)
 ```
 
-패키지 의존 방향: `console → application → account·ledger·interest → money → common`. 화살표 반대 방향 import는 하지 않는다.
+패키지 의존 방향: `console → application → account, ledger, interest → money → common`. 화살표 반대 방향 import는 하지 않는다.
 
 ## 핵심 개념 정리 (미션 전에 읽기)
 
@@ -46,7 +46,7 @@ System.out.println((long) (10_000_000 * 0.0003)); // 2999
 - 나눗셈은 scale과 `RoundingMode`를 지정한다: `BigDecimal.ONE.divide(new BigDecimal("3"))`는 무한소수라 `ArithmeticException`이 난다. `a.divide(b, 10, RoundingMode.HALF_EVEN)`처럼 쓴다.
 - 불변이다: `a.add(b)`는 `a`를 바꾸지 않고 새 객체를 반환한다. 반환값을 버리면 계산이 사라진다.
 
-원화(KRW)는 소수점이 없지만 이자·환율·수수료 계산 중간에는 소수가 생긴다. "어느 단계에서 어떤 `RoundingMode`로 몇 자리를 남기는가"는 약관이나 업무 규칙으로 정하는 값이고, M1-4에서 미션 규칙으로 정해서 쓴다.
+원화(KRW)는 소수점이 없지만 이자, 환율, 수수료 계산 중간에는 소수가 생긴다. "어느 단계에서 어떤 `RoundingMode`로 몇 자리를 남기는가"는 약관이나 업무 규칙으로 정하는 값이고, M1-4에서 미션 규칙으로 정해서 쓴다.
 
 ### 2. 값 객체 vs 엔티티
 | | 값 객체 (Value Object) | 엔티티 (Entity) |
@@ -64,7 +64,7 @@ System.out.println((long) (10_000_000 * 0.0003)); // 2999
 5. 상태를 바꾸는 연산은 새 객체를 반환한다 (`money.plus(other)`).
 6. 생성자 안에서 `this`를 다른 객체에 넘기거나 static 필드에 저장하지 않는다.
 
-**스레드 간 공유에서 얻는 효과 (JLS 17.5 final 필드 의미론)**: 생성자가 끝난 뒤에 참조를 얻은 스레드는 그 객체의 `final` 필드가 생성자에서 대입한 값으로 보이는 것이 보장된다. 6번 규칙을 어겨 생성 도중 `this`가 다른 스레드에 노출되면 이 보장이 사라진다. `final` 필드만 있는 객체는 생성 후 값이 바뀌지 않으므로, 여러 스레드가 락 없이 같은 `Money` 인스턴스를 읽어도 다른 값을 보는 일이 없다. Phase 2에서 여러 스레드가 `Account`를 공유할 때, 락이 필요한 곳은 가변 필드인 `balance`·`status`를 바꾸는 코드뿐이고 `Money` 자체에는 락이 필요 없다.
+**스레드 간 공유에서 얻는 효과 (JLS 17.5 final 필드 의미론)**: 생성자가 끝난 뒤에 참조를 얻은 스레드는 그 객체의 `final` 필드가 생성자에서 대입한 값으로 보이는 것이 보장된다. 6번 규칙을 어겨 생성 도중 `this`가 다른 스레드에 노출되면 이 보장이 사라진다. `final` 필드만 있는 객체는 생성 후 값이 바뀌지 않으므로, 여러 스레드가 락 없이 같은 `Money` 인스턴스를 읽어도 다른 값을 보는 일이 없다. Phase 2에서 여러 스레드가 `Account`를 공유할 때, 락이 필요한 곳은 가변 필드인 `balance`, `status`를 바꾸는 코드뿐이고 `Money` 자체에는 락이 필요 없다.
 
 ### 4. `equals` / `hashCode` 계약
 - `a.equals(b)`가 `true`면 `a.hashCode() == b.hashCode()`여야 한다.
@@ -109,8 +109,8 @@ gradle wrapper --gradle-version 8.14.3
 ## 주차별 계획
 | 주 | 미션 | 개념 학습 범위 |
 |---|---|---|
-| 1주 (8~12h) | M1-1, M1-4 | 핵심 개념 1·3·4·6절, `BigDecimal` Javadoc class description, `RoundingMode`, `ChronoUnit`, 이펙티브 자바 아이템 10·11·17 |
-| 2주 (10~14h) | M1-2, M1-3 | 핵심 개념 2·5절, `enum`·`record`·`switch` 식, `java.time`(`Clock`, `LocalDate`, `LocalDateTime`), 컬렉션·스트림(`Collectors.groupingBy`), 이펙티브 자바 아이템 49·69~73 |
+| 1주 (8~12h) | M1-1, M1-4 | 핵심 개념 1, 3, 4, 6절, `BigDecimal` Javadoc class description, `RoundingMode`, `ChronoUnit`, 이펙티브 자바 아이템 10, 11, 17 |
+| 2주 (10~14h) | M1-2, M1-3 | 핵심 개념 2, 5절, `enum`, `record`, `switch` 식, `java.time`(`Clock`, `LocalDate`, `LocalDateTime`), 컬렉션, 스트림(`Collectors.groupingBy`), 이펙티브 자바 아이템 49, 69~73 |
 | 3주 (6~10h) | M1-5 | 이 README "이 Phase의 결과물"의 패키지 의존 방향, JaCoCo Gradle 플러그인 |
 
 M1-4의 선행은 M1-1뿐이라 1주차에 둔다. M1-4와 M1-5를 같은 주에 두면 3주차가 10~16h로 주 15h를 넘는다.
@@ -125,7 +125,7 @@ M1-4의 선행은 M1-1뿐이라 1주차에 둔다. M1-4와 M1-5를 같은 주에
 | [M1-5](missions/M1-5-console-bank.md) | [종합] 콘솔 뱅킹 | 6~10h |
 
 ## 읽을거리
-- 이펙티브 자바 3판: 아이템 10·11 (`equals`/`hashCode`), 17 (불변), 49 (매개변수 검증), 69~73 (예외)
+- 이펙티브 자바 3판: 아이템 10, 11 (`equals`/`hashCode`), 17 (불변), 49 (매개변수 검증), 69~73 (예외)
 - `java.math.BigDecimal` Javadoc의 class description 전체, `RoundingMode` Javadoc의 표
 - Java Language Specification (Java SE 21) 17.5 "final Field Semantics"
 - JUnit 5 User Guide: "Writing Tests" 장의 "Display Names", "Parameterized Tests" 절

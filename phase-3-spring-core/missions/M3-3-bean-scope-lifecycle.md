@@ -1,6 +1,6 @@
-# M3-3 빈 스코프·라이프사이클과 싱글톤 상태 문제
+# M3-3 빈 스코프, 라이프사이클과 싱글톤 상태 문제
 
-> 가이드 수준: L2 · 예상 시간: 3~4h · 선행: M3-2
+> 가이드 수준: L2, 예상 시간: 3~4h, 선행: M3-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -29,8 +29,8 @@ M3-2에서 `TransferEngine`은 모든 스레드가 공유하는 싱글톤 빈이
 | 소멸 1 | `pre-destroy` | `@PreDestroy` |
 | 소멸 2 | `destroy` | `DisposableBean.destroy()` |
 
-3. 파트 A·B의 클래스에는 `@Component`를 붙이지 않는다. 테스트 전용 `@Configuration` 클래스에서 `@Bean` 또는 `@Import`로 등록하고 `new AnnotationConfigApplicationContext(테스트설정.class)`로 띄운다. 애플리케이션 컨텍스트(`@SpringBootTest`)에 실험용 빈이 섞이지 않게 하기 위해서다.
-4. 테스트 전용 `@Configuration`은 **테스트 클래스 안의 static 중첩 클래스**로 만든다. `src/test/java/lab/bank/` 아래의 top-level `@Configuration`·`@Component`는 `@SpringBootTest`의 컴포넌트 스캔에 포함되지만, 테스트 클래스의 중첩 클래스는 Spring Boot의 `TypeExcludeFilter`가 스캔에서 뺀다 (Spring Boot 4.1.2에서 확인). 단, `@SpringBootTest` 클래스 **자신의** 중첩 `@Configuration`은 애플리케이션 설정을 대신해 버리므로 파트 A·B 테스트에는 `@SpringBootTest`를 붙이지 않는다.
+3. 파트 A, B의 클래스에는 `@Component`를 붙이지 않는다. 테스트 전용 `@Configuration` 클래스에서 `@Bean` 또는 `@Import`로 등록하고 `new AnnotationConfigApplicationContext(테스트설정.class)`로 띄운다. 애플리케이션 컨텍스트(`@SpringBootTest`)에 실험용 빈이 섞이지 않게 하기 위해서다.
+4. 테스트 전용 `@Configuration`은 **테스트 클래스 안의 static 중첩 클래스**로 만든다. `src/test/java/lab/bank/` 아래의 top-level `@Configuration`, `@Component`는 `@SpringBootTest`의 컴포넌트 스캔에 포함되지만, 테스트 클래스의 중첩 클래스는 Spring Boot의 `TypeExcludeFilter`가 스캔에서 뺀다 (Spring Boot 4.1.2에서 확인). 단, `@SpringBootTest` 클래스 **자신의** 중첩 `@Configuration`은 애플리케이션 설정을 대신해 버리므로 파트 A, B 테스트에는 `@SpringBootTest`를 붙이지 않는다.
 
 ### 2. 프로토타입 스코프 (파트 B)
 1. `RequestTrace`: `@Scope("prototype")`. 생성 시 `UUID.randomUUID().toString()`으로 `traceId`를 정하고 `traceId()`로 돌려준다. `@PreDestroy`에서 recorder에 `trace-destroyed:{traceId}`를 기록한다.
@@ -40,7 +40,7 @@ M3-2에서 `TransferEngine`은 모든 스레드가 공유하는 싱글톤 빈이
 ### 3. 상태 있는 싱글톤의 동시성 버그 (파트 C)
 1. `StatefulTransferFacade`(`@Component`): 필드 `private TransferCommand current;`를 둔다. `TransferResult execute(TransferCommand command)`는 정확히 다음 3단계를 실행한다.
    1. `current = command;`
-   2. `Thread.sleep(1)` — 검증·수수료 조회에 걸리는 시간을 흉내 내는 **재현용 장치**다. `InterruptedException`을 잡으면 `Thread.currentThread().interrupt()`로 플래그를 복구하고 `IllegalStateException`을 던진다.
+   2. `Thread.sleep(1)`: 검증, 수수료 조회에 걸리는 시간을 흉내 내는 **재현용 장치**다. `InterruptedException`을 잡으면 `Thread.currentThread().interrupt()`로 플래그를 복구하고 `IllegalStateException`을 던진다.
    3. `return transferEngine.transfer(current);`
 2. `StatelessTransferFacade`(`@Component`): 같은 3단계를 필드 없이 지역 변수(또는 파라미터)로 실행한다. 클래스의 모든 필드는 `private final`이고 주입받은 빈만 가리킨다.
 3. `StatefulTransferFacadeNoSleep`(`@Component`): 1번에서 2단계(sleep)만 뺀 버전. 재현용 장치 없이도 버그가 있는지 관찰하는 용도다.
@@ -64,13 +64,13 @@ M3-2에서 `TransferEngine`은 모든 스레드가 공유하는 싱글톤 빈이
 | 3 | 파트 B 설정 (`LifecycleRecorder`, `RequestTrace`, `EagerTraceService`, `ProviderTraceService`) | `EagerTraceService.currentTraceId()` 3번 | 3개 값이 모두 같다 (서로 다른 값 1개) |
 | 4 | 3번 설정 | `ProviderTraceService.newTraceId()` 3번 | 3개 값이 모두 다르다 (서로 다른 값 3개) |
 | 5 | 3번 설정 | `getBean(RequestTrace.class)` 2번 | 서로 다른 인스턴스 (`isNotSameAs`) |
-| 6 | 3·4번 실행 후 | 컨텍스트 `close()` | `events()`에 `trace-destroyed:`로 시작하는 항목 0개 (프로토타입은 컨테이너가 소멸 콜백을 호출하지 않는다) |
+| 6 | 3, 4번 실행 후 | 컨텍스트 `close()` | `events()`에 `trace-destroyed:`로 시작하는 항목 0개 (프로토타입은 컨테이너가 소멸 콜백을 호출하지 않는다) |
 | 7 | `@SpringBootTest`, 버그 재현용 데이터(P=3) | 라운드 0부터 `StatefulTransferFacade`로 100개 동시 실행, 불일치 계좌가 1개 이상 나온 라운드에서 멈춘다 (최대 20라운드) | 20라운드 안에 불일치 계좌 ≥ 1인 라운드가 나온다. **모든 라운드에서** 출금 계좌 100개 + 입금 계좌 잔액 합계 = 100,000,000원 |
 | 8 | 7번에서 불일치가 나온 라운드 | 그 라운드의 입금 계좌 잔액 확인 | 5,050,000원보다 작다 (실행되지 않은 명령이 있다) |
 | 9 | `@SpringBootTest`, P=6 | `StatefulTransferFacadeNoSleep`으로 20라운드 실행 (중간에 멈추지 않음) | 단언 없음. 라운드별 불일치 계좌 수를 `docs/M3-3-singleton-state.md`에 기록 (0이 나와도 된다) |
 | 10 | `@SpringBootTest`, P=4, `@RepeatedTest(50)` | `StatelessTransferFacade`로 100개 동시 실행 | 50회 모두: 불일치 계좌 0개, 입금 계좌 5,050,000원, 합계 100,000,000원, 실패(예외) 0건 |
 
-시나리오 8·10의 5,050,000원 계산: 1,000 × (1 + 2 + … + 100) = 1,000 × 100 × 101 ÷ 2 = 1,000 × 5,050 = 5,050,000.
+시나리오 8, 10의 5,050,000원 계산: 1,000 × (1 + 2 + … + 100) = 1,000 × 100 × 101 ÷ 2 = 1,000 × 5,050 = 5,050,000.
 합계 100,000,000원 = 출금 계좌 100개 × 1,000,000원 + 입금 계좌 0원. 이체는 계좌 사이에서 돈을 옮기기만 하므로 버그가 있어도 이 값은 변하지 않는다.
 
 ## 제약

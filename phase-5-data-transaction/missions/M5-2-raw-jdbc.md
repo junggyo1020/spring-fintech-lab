@@ -1,10 +1,10 @@
 # M5-2 JDBC 맨손 구현과 수동 트랜잭션
 
-> 가이드 수준: L2 · 예상 시간: 4~6h · 선행: M5-1
+> 가이드 수준: L2, 예상 시간: 4~6h, 선행: M5-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- `Connection`, `PreparedStatement`, `ResultSet`과 try-with-resources만으로 `JdbcAccountRepository`를 구현하고, 테스트 12개로 저장·조회·이체를 검증한다.
+- `Connection`, `PreparedStatement`, `ResultSet`과 try-with-resources만으로 `JdbcAccountRepository`를 구현하고, 테스트 12개로 저장, 조회, 이체를 검증한다.
 - `setAutoCommit(false)` / `commit()` / `rollback()`으로 이체 하나를 한 트랜잭션으로 묶고, 네 번째 SQL 문이 실패해도 앞선 UPDATE 2개가 되돌려짐을 테스트로 보여준다.
 - 트랜잭션 없이 같은 이체를 실행하면 잔액과 거래내역이 어긋나는 것을 테스트로 재현한다.
 - `DriverManager`와 HikariCP 커넥션 풀의 조회 100회 소요 시간, 그리고 반복 코드 줄 수를 표로 기록한다 (M5-3과 비교할 기준값).
@@ -23,7 +23,7 @@ M5-1에서 mysql CLI로 쳤던 `START TRANSACTION` / `ROLLBACK`을 이번에는 
        List<Account> findAll();                               // number 오름차순
    }
    ```
-2. **`Account`에 DB 식별자 추가.** `lab.bank.account.Account`에 `Long id` 필드를 추가한다. `Account.open(...)`(M4-7에서 `ownerId`를 받도록 바뀐 형태)으로 만든 계좌는 `id == null`이다. 저장 컬럼은 M5-1의 `account` 테이블 전체(`owner_id` 포함)다. DB에서 읽은 값으로 계좌를 다시 만드는 정적 팩토리(이름 자유, 예: `restore`)를 추가하되, 이 팩토리는 잔액·상태 검증 규칙(Phase 1)을 우회하지 않는다. 동등성은 Phase 1 규칙(`AccountNumber`만 비교)을 유지한다.
+2. **`Account`에 DB 식별자 추가.** `lab.bank.account.Account`에 `Long id` 필드를 추가한다. `Account.open(...)`(M4-7에서 `ownerId`를 받도록 바뀐 형태)으로 만든 계좌는 `id == null`이다. 저장 컬럼은 M5-1의 `account` 테이블 전체(`owner_id` 포함)다. DB에서 읽은 값으로 계좌를 다시 만드는 정적 팩토리(이름 자유, 예: `restore`)를 추가하되, 이 팩토리는 잔액, 상태 검증 규칙(Phase 1)을 우회하지 않는다. 동등성은 Phase 1 규칙(`AccountNumber`만 비교)을 유지한다.
 3. **`lab.bank.persistence.jdbc.JdbcAccountRepository implements AccountRepository`.**
    - 생성자는 `javax.sql.DataSource` 하나만 받는다. Spring 빈으로 등록하지 않고 테스트에서 직접 `new` 한다 (빈은 M5-3의 JdbcTemplate 버전부터).
    - `save`: `id == null`이면 INSERT 후 `Statement.RETURN_GENERATED_KEYS`로 받은 키를 `id`에 넣어 반환한다. `id != null`이면 `balance`, `status`만 UPDATE한다. UPDATE 결과가 0행이면 `AccountNotFoundException`.
@@ -32,7 +32,7 @@ M5-1에서 mysql CLI로 쳤던 `START TRANSACTION` / `ROLLBACK`을 이번에는 
    - 이체에서 같은 커넥션을 써야 하는 메서드는 `Connection`을 첫 번째 파라미터로 받는 오버로드를 따로 둔다 (예: 계좌 조회, 잔액 UPDATE, 거래내역 INSERT). 이 오버로드는 커넥션을 닫지 않는다.
 4. **`SQLException` 처리.** checked 예외인 `SQLException`은 이 미션에서 새로 만드는 `lab.bank.persistence.jdbc.JdbcAccessException extends RuntimeException`으로 감싸고 원인(`cause`)을 보존한다. 도메인 예외(`BankException` 하위)는 감싸지 않고 그대로 던진다.
 5. **`lab.bank.persistence.jdbc.JdbcTransferService`.** `TransferResult transfer(TransferCommand command)` (Phase 2 `TransferCommand`, `TransferResult` 재사용).
-   - 실행 순서: 커넥션 획득 → `setAutoCommit(false)` → 두 계좌 조회 → 도메인 메서드로 출금·입금(Phase 1~2 규칙 그대로) → 잔액 UPDATE 2개 → `TRANSFER_OUT`, `TRANSFER_IN` 거래내역 INSERT 2개 → `commit()`.
+   - 실행 순서: 커넥션 획득 → `setAutoCommit(false)` → 두 계좌 조회 → 도메인 메서드로 출금, 입금(Phase 1~2 규칙 그대로) → 잔액 UPDATE 2개 → `TRANSFER_OUT`, `TRANSFER_IN` 거래내역 INSERT 2개 → `commit()`.
    - 어떤 예외든 발생하면 `rollback()` 후 원래 예외를 다시 던진다. `rollback()` 자체가 실패하면 그 예외를 원래 예외의 `addSuppressed`로 붙인다.
    - `finally`에서 `setAutoCommit(true)`로 되돌린 뒤 커넥션을 닫는다.
    - 같은 계좌 이체(`SameAccountTransferException`), 금액 0 이하(`InvalidAmountException`)는 M2-7과 같은 순서로 **커넥션을 얻기 전에** 검증한다. 검증 순서(상태 → 통화 → 잔액)도 M2-7을 따른다. 1일 한도와 `requestId` 멱등성은 이 미션에서 다루지 않는다 (M5-4).
@@ -45,14 +45,14 @@ M5-1에서 mysql CLI로 쳤던 `START TRANSACTION` / `ROLLBACK`을 이번에는 
 
 | # | 준비(Given) | 실행(When) | 기대 결과(Then) |
 |---|---|---|---|
-| 1 | 빈 테이블 | `save(A 계좌)` — `Account.open`으로 만든 예금주 김하나, 소유자 `kim`, KRW 계좌 | 반환 계좌의 `id`가 `null`이 아님, `account` 1행, `balance = 0.00`, `status = 'ACTIVE'` |
+| 1 | 빈 테이블 | `save(A 계좌)`: `Account.open`으로 만든 예금주 김하나, 소유자 `kim`, KRW 계좌 | 반환 계좌의 `id`가 `null`이 아님, `account` 1행, `balance = 0.00`, `status = 'ACTIVE'` |
 | 2 | 1번 계좌 저장됨 | `findByNumber(A)` | 값이 있고 `number`, `ownerName`, `ownerId`, `balance`(0원), `status`가 저장한 값과 같다 |
 | 3 | 빈 테이블 | `findByNumber(A)` / `findByNumber(null)` | `Optional.empty()` / `NullPointerException` |
 | 4 | A 저장 후 10,000원 입금한 객체 | `save(그 객체)` | `UPDATE` 1행, DB의 `balance = 10000.00`, `account` 행 수 1 유지 |
 | 5 | `id = 999`인 계좌 객체 (DB에 없음) | `save` | `AccountNotFoundException` |
 | 6 | A = 100,000, B = 0 | `transfer(A → B, 30,000, "월세")` | A = 70000.00, B = 30000.00, 거래 행 2 (`TRANSFER_OUT` balance_after 70000.00, `TRANSFER_IN` balance_after 30000.00), A + B = 100000.00 |
 | 7 | A = 100,000, B = 0 | `transfer(A → B, 100,001)` | `InsufficientBalanceException`, A = 100000.00, B = 0.00, 거래 행 0 |
-| 8 | A = 100,000, B = 0 | `transfer` 금액 0 / −1 / A → A 30,000 | 0과 −1은 `InvalidAmountException`, A → A는 `SameAccountTransferException`. 세 경우 모두 잔액·거래 행 변화 없음 |
+| 8 | A = 100,000, B = 0 | `transfer` 금액 0 / −1 / A → A 30,000 | 0과 −1은 `InvalidAmountException`, A → A는 `SameAccountTransferException`. 세 경우 모두 잔액, 거래 행 변화 없음 |
 | 9 | A = 100,000, B = 0 | `transfer(A → B, 30,000, memo = "가" × 101자)` | `JdbcAccessException`, `getCause()`가 `SQLException`이고 `getErrorCode() == 1406`. A = 100000.00, B = 0.00, 거래 행 0 (이미 실행된 UPDATE 2개가 롤백됨) |
 | 10 | A = 100,000, B = 0 | 요구사항 6의 트랜잭션 없는 버전으로 9번과 같은 입력 | 예외 발생, **A = 70000.00, B = 30000.00, 거래 행 0** (잔액은 바뀌었는데 거래내역이 없음 = 원장 불일치) |
 | 11 | A = 100,000, B = `FROZEN` 상태 | `transfer(A → B, 30,000)` | `AccountNotActiveException`, A = 100000.00, 거래 행 0 |
@@ -74,15 +74,15 @@ M5-1에서 mysql CLI로 쳤던 `START TRANSACTION` / `ROLLBACK`을 이번에는 
 
 | 항목 | JDBC (M5-2) |
 |---|---|
-| `JdbcTransferService.transfer` 흐름 전체 줄 수 (빈 줄·주석·import 제외, 호출하는 저장소 오버로드 포함) | |
+| `JdbcTransferService.transfer` 흐름 전체 줄 수 (빈 줄, 주석, import 제외, 호출하는 저장소 오버로드 포함) | |
 | try 블록 개수 | |
 | `SQLException`을 잡는 catch 개수 | |
 | `Connection`을 파라미터로 받는 메서드 개수 | |
 | `ResultSet` → `Account` 변환 코드 위치 개수 (같은 변환을 몇 군데에 썼는가) | |
 
 ## 제약
-- `JdbcTemplate`, `@Transactional`, `TransactionTemplate`, JPA 사용 금지 — 이 미션은 그것들이 대신하는 코드를 직접 쓰는 것이 목적이다.
-- SQL에 값을 문자열 연결(`"... WHERE number = '" + number + "'"`)로 넣지 않는다. 항상 `PreparedStatement`의 `?` 바인딩을 쓴다 — SQL 인젝션, 그리고 따옴표가 들어간 예금주 이름(`O'Brien`)에서 문법 오류가 난다.
+- `JdbcTemplate`, `@Transactional`, `TransactionTemplate`, JPA 사용 금지: 이 미션은 그것들이 대신하는 코드를 직접 쓰는 것이 목적이다.
+- SQL에 값을 문자열 연결(`"... WHERE number = '" + number + "'"`)로 넣지 않는다. 항상 `PreparedStatement`의 `?` 바인딩을 쓴다: SQL 인젝션, 그리고 따옴표가 들어간 예금주 이름(`O'Brien`)에서 문법 오류가 난다.
 - 금액은 `ResultSet.getBigDecimal` / `PreparedStatement.setBigDecimal`로만 주고받는다. `getDouble` 금지.
 - `Connection`, `PreparedStatement`, `ResultSet`은 모두 try-with-resources로 닫는다. 이체용 오버로드에 넘어온 `Connection`만 예외다.
 - 테스트끼리 데이터를 공유하지 않는다. 테스트 실행 순서를 바꿔도(`@TestMethodOrder` 없이) 모두 통과해야 한다.

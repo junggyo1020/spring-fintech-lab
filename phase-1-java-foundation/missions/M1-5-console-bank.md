@@ -1,6 +1,6 @@
 # M1-5 [종합] 콘솔 뱅킹
 
-> 가이드 수준: L1 · 예상 시간: 6~10h · 선행: M1-3, M1-4
+> 가이드 수준: L1, 예상 시간: 6~10h, 선행: M1-3, M1-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -11,8 +11,8 @@
 
 ## 배경
 은행 시스템의 같은 이체 로직이 인터넷뱅킹, 모바일 앱, 창구 단말, 배치에서 모두 호출된다. 이체 규칙이 화면 코드 안에 섞여 있으면 화면마다 규칙을 복사하게 되고, 한 곳만 고쳐 채널마다 다른 결과가 나오는 사고가 난다.
-그래서 입출력(UI)과 유스케이스(`BankService`)를 나누고, `BankService`는 콘솔·웹 어느 쪽에서 호출되는지 모르게 만든다.
-이 미션은 M1-3의 `BankService`와 M1-4의 `InterestPolicy`·`TaxCalculator`를 콘솔 UI에 연결하는 Phase 1 종합 미션이다. `main`에서 직접 `new`로 조립한 객체 그래프는 Phase 3에서 Spring 컨테이너가 대신 조립하게 된다.
+그래서 입출력(UI)과 유스케이스(`BankService`)를 나누고, `BankService`는 콘솔, 웹 어느 쪽에서 호출되는지 모르게 만든다.
+이 미션은 M1-3의 `BankService`와 M1-4의 `InterestPolicy`, `TaxCalculator`를 콘솔 UI에 연결하는 Phase 1 종합 미션이다. `main`에서 직접 `new`로 조립한 객체 그래프는 Phase 3에서 Spring 컨테이너가 대신 조립하게 된다.
 
 ## 요구사항
 
@@ -46,7 +46,7 @@ lab.bank
 |---|---|
 | `Account openAccount(String ownerName, Currency currency)` | `generator.next()`로 번호를 받아 `Account.open` 후 등록하고 반환 |
 | `List<Transaction> history(AccountNumber number, LocalDate from, LocalDate to)` | 계좌가 없으면 `AccountNotFoundException`, 있으면 `Ledger.history(number, from, to)` |
-| `AfterTaxInterest estimateInterest(AccountNumber number, BigDecimal annualRate, LocalDate from, LocalDate to)` | 현재 잔액을 원금으로 `interestPolicy.calculate` → `taxCalculator.calculate` 결과를 반환. 잔액·거래내역은 바꾸지 않는다 |
+| `AfterTaxInterest estimateInterest(AccountNumber number, BigDecimal annualRate, LocalDate from, LocalDate to)` | 현재 잔액을 원금으로 `interestPolicy.calculate` → `taxCalculator.calculate` 결과를 반환. 잔액, 거래내역은 바꾸지 않는다 |
 | `void freeze(AccountNumber)`, `void unfreeze(AccountNumber)`, `void close(AccountNumber)` | 계좌를 찾아 `Account`의 같은 이름 메서드 호출 |
 
 ### 4. 콘솔 화면과 입력 규칙
@@ -59,7 +59,7 @@ lab.bank
 4. 이체
 5. 거래내역 조회 (기간)
 6. 거래 취소
-7. 예상 이자 계산 (세전·세후)
+7. 예상 이자 계산 (세전, 세후)
 8. 계좌 정지/해제/해지
 0. 종료
 선택>
@@ -78,7 +78,7 @@ lab.bank
 | 0 | 없음 | `종료합니다.` 출력 후 `run()`이 반환된다 |
 
 - 콘솔에서 개설하는 계좌는 KRW만이다. 금액은 1 이상의 정수만 입력받는다.
-- 입금·출금·이체 적요(`memo`)는 각각 `"콘솔 입금"`, `"콘솔 출금"`, `"콘솔 이체"`로 고정한다.
+- 입금, 출금, 이체 적요(`memo`)는 각각 `"콘솔 입금"`, `"콘솔 출금"`, `"콘솔 이체"`로 고정한다.
 - 각 메뉴 처리가 끝나면 메뉴 화면을 다시 출력한다.
 
 **잘못된 입력** (프로그램이 종료되지 않고 메뉴로 돌아간다)
@@ -102,7 +102,7 @@ lab.bank
 | `SAME_ACCOUNT_TRANSFER` | `같은 계좌로는 이체할 수 없습니다.` |
 | `TRANSACTION_NOT_FOUND` | `거래를 찾을 수 없습니다.` |
 | `TRANSACTION_ALREADY_REVERSED` | `이미 취소된 거래입니다.` |
-| `INVALID_REVERSAL` | `입금·출금 거래만 취소할 수 있습니다.` |
+| `INVALID_REVERSAL` | `입금, 출금 거래만 취소할 수 있습니다.` |
 | `CURRENCY_MISMATCH` | `통화가 다릅니다.` |
 
 `INSUFFICIENT_BALANCE`의 현재 잔액, `ACCOUNT_NOT_ACTIVE`의 현재 상태는 `MenuController`가 `bankService.findAccount(...)`로 조회해 넣는다.
@@ -110,9 +110,9 @@ lab.bank
 ### 5. 클래스 시그니처
 | 클래스 | 시그니처 |
 |---|---|
-| `InputView` | `interface InputView { String readLine(String prompt); }` — 입력이 끝났으면 `null` 반환 |
+| `InputView` | `interface InputView { String readLine(String prompt); }`: 입력이 끝났으면 `null` 반환 |
 | `ConsoleInputView` | `Scanner(System.in)` 사용. `hasNextLine()`이 `false`면 `null` 반환 |
-| `OutputView` | `OutputView(PrintStream out)`. 메뉴·결과·오류 메시지 출력 메서드 |
+| `OutputView` | `OutputView(PrintStream out)`. 메뉴, 결과, 오류 메시지 출력 메서드 |
 | `MenuController` | `MenuController(InputView input, OutputView output, BankService bankService)`, `void run()` |
 | `BankConsoleApp` | `public static void main(String[] args)`: `Clock.system(ZoneId.of("Asia/Seoul"))`, `SequentialAccountNumberGenerator`, `SimpleDailyInterestPolicy`, `TaxCalculator`, `Ledger`를 만들어 조립하고 `run()` 호출 |
 
@@ -182,7 +182,7 @@ tasks.jacocoTestCoverageVerification {
 | 6 | 고정 Clock `2026-01-15T10:00:00Z`/`Asia/Seoul`, 가짜 입력 `1`, `홍길동`, `2`, `110-0000-0001`, `10000`, `3`, `110-0000-0001`, `3000`, `5`, `110-0000-0001`, `2026-01-01`, `2026-01-31`, `0` | `run()` | 출력에 `계좌가 개설되었습니다: 110-0000-0001`, `입금 완료. 잔액: KRW 10,000`, `출금 완료. 잔액: KRW 7,000`, `2026-01-15 19:00 \| DEPOSIT \| KRW 10,000`, `2026-01-15 19:00 \| WITHDRAWAL \| KRW 3,000`, `종료합니다.`가 이 순서로 포함 |
 | 7 | 가짜 입력 `abc`, `9`, `0` | `run()` | `잘못된 입력입니다. 메뉴 번호를 입력하세요.` 2회 출력 후 `종료합니다.` |
 | 8 | 계좌 개설 후 가짜 입력 `2`, `110-0000-0001`, `1000.5`, `0` | `run()` | `잘못된 입력입니다. 금액은 정수로 입력하세요.`, 잔액 0 그대로 |
-| 9 | 계좌 개설·5,000 입금 후 가짜 입력 `3`, `110-0000-0001`, `10000`, `0` | `run()` | `잔액이 부족합니다. (현재 잔액: KRW 5,000)` |
+| 9 | 계좌 개설, 5,000 입금 후 가짜 입력 `3`, `110-0000-0001`, `10000`, `0` | `run()` | `잔액이 부족합니다. (현재 잔액: KRW 5,000)` |
 | 10 | 가짜 입력 `2`, `110-0000-0099`, `1000`, `0` | `run()` | `계좌를 찾을 수 없습니다.` |
 | 11 | 가짜 입력 `1`, `홍길동` (그 뒤 입력 없음) | `run()` | 예외 없이 반환, 마지막 출력 `종료합니다.` |
 | 12 | 계좌 개설 후 가짜 입력 `8`, `110-0000-0001`, `1`, `2`, `110-0000-0001`, `1000`, `0` | `run()` | `계좌 상태: FROZEN`, `거래할 수 없는 계좌 상태입니다. (현재 상태: FROZEN)` |

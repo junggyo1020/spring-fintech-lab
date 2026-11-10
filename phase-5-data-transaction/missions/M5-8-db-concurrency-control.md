@@ -1,6 +1,6 @@
 # M5-8 DB 동시성 제어 3종 비교
 
-> 가이드 수준: L2 · 예상 시간: 6~8h · 선행: M5-6
+> 가이드 수준: L2, 예상 시간: 6~8h, 선행: M5-6
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -16,7 +16,7 @@ M5-6에서 확인한 "트랜잭션 경계 = 커넥션 점유 구간"이 측정 �
 
 ## 요구사항
 1. **스키마 변경.** `src/main/resources/db/migration/V2__add_account_version.sql`로 `account`에 `version BIGINT NOT NULL DEFAULT 0` 컬럼을 추가한다. V1은 수정하지 않는다.
-2. **핵심 인터페이스** (`lab.bank.dblock` — Phase 2의 `lab.bank.concurrency`와 섞지 않는다).
+2. **핵심 인터페이스** (`lab.bank.dblock`: Phase 2의 `lab.bank.concurrency`와 섞지 않는다).
    ```java
    public interface WithdrawService {
        void withdraw(AccountNumber number, Money amount);   // 성공 시 반환, 실패 시 예외
@@ -24,12 +24,12 @@ M5-6에서 확인한 "트랜잭션 경계 = 커넥션 점유 구간"이 측정 �
    ```
    모든 구현은 출금 1건마다 `account_transaction`에 `WITHDRAWAL` 행 1개를 같은 트랜잭션에서 INSERT한다. 잔액 부족은 `InsufficientBalanceException`(Phase 1), 금액 0 이하는 `InvalidAmountException`, 없는 계좌는 `AccountNotFoundException`이다.
 3. **구현 4개.** 모두 `WithdrawService`를 구현하는 빈이다. 이름은 아래를 쓴다.
-   - `NaiveWithdrawService` — `@Transactional` 안에서 `JdbcTemplate`으로 `SELECT balance ... WHERE number = ?` → 애플리케이션에서 잔액 확인·차감 계산 → `UPDATE account SET balance = ? WHERE number = ?`(계산된 값). 락도 version 비교도 없음 (lost update 재현용). JPA 변경 감지를 쓰지 않는 이유: 아래 `@Version`을 붙이면 JPA 버전은 덮어쓰기 대신 충돌 예외를 내서 lost update가 재현되지 않는다
-   - `PessimisticWithdrawService` — `@Lock(LockModeType.PESSIMISTIC_WRITE)`가 붙은 리포지토리 조회 메서드로 계좌를 읽는다 (실행 SQL에 `for update`가 붙는지 로그로 확인)
-   - `OptimisticWithdrawService` — `Account`의 `version` 필드에 `@Version`. 충돌(`OptimisticLockingFailureException` 하위 예외)이 나면 **새 트랜잭션으로** 처음부터 다시 실행한다. 최대 시도 횟수(첫 시도 포함)는 생성자나 설정으로 받는다. 최대 시도 후에도 충돌이면 이 미션에서 새로 만드는 `OptimisticRetryExhaustedException`을 던진다. 재시도 사이 대기는 없다 (이 미션의 규칙). 누적 재시도 횟수를 테스트에서 읽을 수 있게 노출한다
-   - `AtomicUpdateWithdrawService` — `UPDATE account SET balance = balance - ? WHERE number = ? AND balance >= ?`를 실행하고 수정된 행 수가 0이면 잔액 부족(계좌가 없는 경우와 구분해야 한다). 거래내역의 `balance_after`는 UPDATE 직후 같은 트랜잭션에서 다시 읽은 잔액으로 채운다
+   - `NaiveWithdrawService`: `@Transactional` 안에서 `JdbcTemplate`으로 `SELECT balance ... WHERE number = ?` → 애플리케이션에서 잔액 확인, 차감 계산 → `UPDATE account SET balance = ? WHERE number = ?`(계산된 값). 락도 version 비교도 없음 (lost update 재현용). JPA 변경 감지를 쓰지 않는 이유: 아래 `@Version`을 붙이면 JPA 버전은 덮어쓰기 대신 충돌 예외를 내서 lost update가 재현되지 않는다
+   - `PessimisticWithdrawService`: `@Lock(LockModeType.PESSIMISTIC_WRITE)`가 붙은 리포지토리 조회 메서드로 계좌를 읽는다 (실행 SQL에 `for update`가 붙는지 로그로 확인)
+   - `OptimisticWithdrawService`: `Account`의 `version` 필드에 `@Version`. 충돌(`OptimisticLockingFailureException` 하위 예외)이 나면 **새 트랜잭션으로** 처음부터 다시 실행한다. 최대 시도 횟수(첫 시도 포함)는 생성자나 설정으로 받는다. 최대 시도 후에도 충돌이면 이 미션에서 새로 만드는 `OptimisticRetryExhaustedException`을 던진다. 재시도 사이 대기는 없다 (이 미션의 규칙). 누적 재시도 횟수를 테스트에서 읽을 수 있게 노출한다
+   - `AtomicUpdateWithdrawService`: `UPDATE account SET balance = balance - ? WHERE number = ? AND balance >= ?`를 실행하고 수정된 행 수가 0이면 잔액 부족(계좌가 없는 경우와 구분해야 한다). 거래내역의 `balance_after`는 UPDATE 직후 같은 트랜잭션에서 다시 읽은 잔액으로 채운다
 4. **동시 실행 테스트 틀.** Phase 2 README 5절의 `CountDownLatch` 틀을 쓴다. `ExecutorService`는 고정 32 스레드, HikariCP `maximum-pool-size`는 기본값 10. 각 작업의 결과를 성공 / `InsufficientBalanceException` / `OptimisticRetryExhaustedException` / 기타 예외로 분류해 센다. 기타 예외가 1건이라도 있으면 테스트 실패다.
-5. **데이터 준비와 정리.** 계좌는 테스트 시작 전에 별도 트랜잭션으로 커밋해 둔다. 테스트 메서드·클래스에 `@Transactional`을 붙이지 않는다 (작업 스레드는 테스트 스레드의 트랜잭션을 공유하지 않는다 — README 4절). `@AfterEach`에서 두 테이블을 비운다.
+5. **데이터 준비와 정리.** 계좌는 테스트 시작 전에 별도 트랜잭션으로 커밋해 둔다. 테스트 메서드, 클래스에 `@Transactional`을 붙이지 않는다 (작업 스레드는 테스트 스레드의 트랜잭션을 공유하지 않는다: README 4절). `@AfterEach`에서 두 테이블을 비운다.
 
 ## 테스트 시나리오
 "불변식"은 (1) 최종 잔액 = 초기 잔액 − 출금액 × 성공 수, (2) `WITHDRAWAL` 거래 행 수 = 성공 수, (3) 최종 잔액 ≥ 0 세 가지다.
@@ -39,11 +39,11 @@ M5-6에서 확인한 "트랜잭션 경계 = 커넥션 점유 구간"이 측정 �
 | 1 | 잔액 1,000,000 | `NaiveWithdrawService`로 10,000원 × 100건 동시 | 100건 모두 예외 없이 성공, `WITHDRAWAL` 행 100, **최종 잔액 > 0** (불변식 1 위반). `@RepeatedTest(5)`로 5회 모두 위반이 재현됨. 회차별 최종 잔액을 기록 |
 | 2 | 잔액 1,000,000 | `PessimisticWithdrawService`로 10,000원 × 100건 동시 | 성공 100, 잔액 부족 0, 최종 잔액 0.00, 행 100, 불변식 3개 성립 |
 | 3 | 잔액 1,000,000 | `OptimisticWithdrawService`(최대 시도 100)로 10,000원 × 100건 동시 | 성공 100, 재시도 소진 0, 최종 잔액 0.00, 행 100, 누적 재시도 수 기록 |
-| 4 | 잔액 1,000,000 | `OptimisticWithdrawService`(최대 시도 10)로 10,000원 × 100건 동시 | 성공 + 재시도 소진 = 100, 불변식 3개 성립 (최종 잔액 = 1,000,000 − 10,000 × 성공 수). 성공·소진·누적 재시도 수 기록 |
+| 4 | 잔액 1,000,000 | `OptimisticWithdrawService`(최대 시도 10)로 10,000원 × 100건 동시 | 성공 + 재시도 소진 = 100, 불변식 3개 성립 (최종 잔액 = 1,000,000 − 10,000 × 성공 수). 성공, 소진, 누적 재시도 수 기록 |
 | 5 | 잔액 1,000,000 | `AtomicUpdateWithdrawService`로 10,000원 × 100건 동시 | 성공 100, 최종 잔액 0.00, 행 100, 각 `balance_after` 값이 0~990,000 사이 10,000 단위로 서로 겹치지 않음 |
 | 6 | 잔액 100,000 | 비관적 / 낙관적(최대 시도 50) / 조건부 UPDATE 각각 3,000원 × 50건 동시 | 세 방식 모두 성공 33, 잔액 부족 17, 재시도 소진 0, 최종 잔액 1000.00, 행 33 |
 | 7 | 잔액 100,000 | `NaiveWithdrawService`로 3,000원 × 50건 동시 | 불변식 1 위반 (최종 잔액 ≠ 100,000 − 3,000 × 성공 수). 성공 수와 최종 잔액 기록 |
-| 8 | 잔액 100,000 | 4개 구현 각각에 금액 0 / −1 / 없는 계좌번호로 1건 | `InvalidAmountException` / `InvalidAmountException` / `AccountNotFoundException`, 잔액·행 수 변화 없음 |
+| 8 | 잔액 100,000 | 4개 구현 각각에 금액 0 / −1 / 없는 계좌번호로 1건 | `InvalidAmountException` / `InvalidAmountException` / `AccountNotFoundException`, 잔액, 행 수 변화 없음 |
 | 9 | 잔액 100,000 | `AtomicUpdateWithdrawService`로 100,000원 1건 → 1원 1건 | 첫 건 성공(잔액 0.00, 경계값 `balance >= ?`의 `=`), 두 번째 `InsufficientBalanceException` |
 | 10 | 잔액 100,000 | 조건부 UPDATE에서 `AND balance >= ?`를 잠시 빼고 3,000원 × 50건 동시 | 성공 33, 나머지 17건은 체크 제약 위반(MySQL 3819)으로 실패. Spring 예외 클래스 기록 후 조건을 되돌린다 |
 
@@ -62,12 +62,12 @@ M5-6에서 확인한 "트랜잭션 경계 = 커넥션 점유 구간"이 측정 �
 | 낙관적 락 (최대 100회) | | | | | | | |
 | 조건부 UPDATE | | | | | | | |
 
-표 아래에 다음 세 경우 각각 어떤 방식을 고를지와 근거(측정값 인용)를 적는다: (가) 인기 계좌 하나에 출금이 몰릴 때, (나) 서로 다른 계좌에 출금이 흩어질 때, (다) 잔액 차감 외에 한도 확인·상태 확인 등 검증 규칙이 3개 이상일 때.
+표 아래에 다음 세 경우 각각 어떤 방식을 고를지와 근거(측정값 인용)를 적는다: (가) 인기 계좌 하나에 출금이 몰릴 때, (나) 서로 다른 계좌에 출금이 흩어질 때, (다) 잔액 차감 외에 한도 확인, 상태 확인 등 검증 규칙이 3개 이상일 때.
 
 ## 제약
 - 재시도 루프를 `@Transactional` 메서드 **안**에 두지 않는다. 같은 트랜잭션 안에서 다시 읽으면 영속성 컨텍스트의 1차 캐시와 REPEATABLE READ 스냅샷 때문에 같은 version을 다시 읽는다. 재시도는 트랜잭션 메서드를 가진 다른 빈을 바깥에서 다시 호출하는 구조여야 한다.
 - 시나리오 1, 7(lost update)의 기대값으로 특정 잔액 숫자를 assert하지 않는다. 실행마다 달라진다. "불변식 1 위반"만 assert한다.
-- `synchronized`, `ReentrantLock` 등 JVM 락으로 해결하지 않는다 — 서버 2대에서는 소용없다.
+- `synchronized`, `ReentrantLock` 등 JVM 락으로 해결하지 않는다: 서버 2대에서는 소용없다.
 - 조건부 UPDATE를 Spring Data `@Modifying @Query`로 쓰는 경우, 같은 트랜잭션에서 그 계좌 엔티티를 이미 읽어 둔 상태라면 영속성 컨텍스트의 값은 UPDATE 이전 값이다. 다시 읽기 전에 영속성 컨텍스트를 비워야 하는지 확인한다.
 
 ## 힌트

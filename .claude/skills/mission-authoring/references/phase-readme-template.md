@@ -1,16 +1,16 @@
 # Phase README 템플릿
 
 ```markdown
-# Phase {P} — {주제} ({N}주)
+# Phase {P}: {주제} ({N}주)
 
-> 가이드 수준: L{x} · 선행: Phase {P-1} 완료 · 이 Phase의 workspace 시작 방법: {curriculum-map.md 2절과 같은 문장}
+> 가이드 수준: L{x}, 선행: Phase {P-1} 완료, 이 Phase의 workspace 시작 방법: {curriculum-map.md 2절과 같은 문장}
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
 - {관찰 가능한 행동 3~5개}
 
 ## 이 Phase의 결과물
-{workspace에 남는 코드·문서. 패키지 구조 코드 블록 포함}
+{workspace에 남는 코드, 문서. 패키지 구조 코드 블록 포함}
 
 ## 핵심 개념 정리 (미션 전에 읽기)
 ### 1. {개념}

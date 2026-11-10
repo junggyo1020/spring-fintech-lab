@@ -1,13 +1,13 @@
 # M6-8 다중 인스턴스와 Redis 분산락
 
-> 가이드 수준: L3 · 예상 시간: 5~7h · 선행: M6-4
+> 가이드 수준: L3, 예상 시간: 5~7h, 선행: M6-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - 애플리케이션 2대(포트 8081, 8082)를 같은 MySQL에 붙여 실행하고, JVM 락으로 보호한 잔액 차감 1,000건이 lost update를 내는 것을 실험 기록으로 보여준다.
 - Redisson 락의 만료 시간(lease)이 지나거나 프로세스가 멈춘 동안 다른 인스턴스가 같은 락을 잡아 잔액이 틀어지는 상황을 재현하고, DB 쪽 조건부 쓰기가 그 쓰기를 거부하는 것을 보여준다.
-- JVM 락, DB 락, Redis 락, Redis 락 + DB 조건부 쓰기 4가지를 정확성·장애 시 동작·처리량 열이 정해진 비교표로 정리하고, 이체 API에 쓸 전략을 측정값을 근거로 고른다.
-- M6-3·M6-4의 이체 API가 인스턴스 2대에서도 INV-1~INV-3과 1일 한도·비밀번호 오류 횟수 규칙을 지키는 것을 테스트로 보여준다.
+- JVM 락, DB 락, Redis 락, Redis 락 + DB 조건부 쓰기 4가지를 정확성, 장애 시 동작, 처리량 열이 정해진 비교표로 정리하고, 이체 API에 쓸 전략을 측정값을 근거로 고른다.
+- M6-3, M6-4의 이체 API가 인스턴스 2대에서도 INV-1~INV-3과 1일 한도, 비밀번호 오류 횟수 규칙을 지키는 것을 테스트로 보여준다.
 
 ## 배경
 서버 1대에서 통과한 동시성 테스트는 서버가 2대가 되는 순간 근거를 잃을 수 있다. `synchronized`, `ReentrantLock`, `ConcurrentHashMap` 캐시는 JVM마다 따로 존재하므로, 두 인스턴스가 같은 계좌를 동시에 수정하는 것을 막지 못한다.
@@ -36,7 +36,7 @@ curl -s localhost:8081/actuator/health; curl -s localhost:8082/actuator/health  
 최소 다음을 검색한 결과를 표에 포함한다: `synchronized`, `ReentrantLock`, `ConcurrentHashMap`, `static` 가변 필드, `@Cacheable`, `@Scheduled`. 검색 결과가 0건인 항목도 "0건"으로 적는다.
 
 ### 3. 실험용 엔드포인트 (`experiment` 프로파일에서만 등록)
-1. Flyway 위치를 `experiment` 프로파일에서만 `classpath:db/migration,classpath:db/experiment`로 늘리고, `db/experiment`에 `experiment_account`(`id`, `balance`, `version`) 테이블을 만든다. 분개·멱등 처리는 하지 않는 실험 전용 테이블이다.
+1. Flyway 위치를 `experiment` 프로파일에서만 `classpath:db/migration,classpath:db/experiment`로 늘리고, `db/experiment`에 `experiment_account`(`id`, `balance`, `version`) 테이블을 만든다. 분개, 멱등 처리는 하지 않는 실험 전용 테이블이다.
 2. `POST /api/experiments/accounts/{id}/decrement?strategy={jvm|db|redis|redis-fenced}&leaseMs={선택}&holdMs={선택}`: 잔액을 1 줄인다. 모든 전략에서 쓰기 방식은 "SELECT로 잔액을 읽고 → Java에서 1을 빼고 → UPDATE로 쓴다"이다. `holdMs`가 있으면 읽은 뒤 쓰기 전에 그 시간만큼 멈춘다.
 
 | 전략 | 락 | 쓰기 |
@@ -74,18 +74,18 @@ curl -s localhost:8081/api/experiments/accounts/1
 - E4에서 재개된 8081 요청이 쓰기 후 `unlock()`을 부르면, 락이 이미 만료돼 다른 스레드 소유이므로 Redisson은 `IllegalMonitorStateException`을 던진다. 이 경우 응답 코드를 무엇으로 할지(쓰기는 이미 커밋됨) 정하고 보고서에 적는다.
 
 ### 5. 이체 API 검증 (인스턴스 2대)
-1. 자동 테스트: 한 테스트 JVM에서 `SpringApplicationBuilder`로 애플리케이션 컨텍스트 2개를 서로 다른 포트로 띄우고(같은 Testcontainers MySQL·Redis), 아래를 확인한다. 이 방식은 `static` 필드를 두 컨텍스트가 공유하므로, 2절 표에 `static` 가변 상태가 있다면 1절 3번의 프로세스 2개로도 같은 확인을 하고 결과를 기록한다.
-   - 같은 고객·같은 `Idempotency-Key` 이체 20건을 두 컨텍스트에 10건씩 동시에: 분개 1개
+1. 자동 테스트: 한 테스트 JVM에서 `SpringApplicationBuilder`로 애플리케이션 컨텍스트 2개를 서로 다른 포트로 띄우고(같은 Testcontainers MySQL, Redis), 아래를 확인한다. 이 방식은 `static` 필드를 두 컨텍스트가 공유하므로, 2절 표에 `static` 가변 상태가 있다면 1절 3번의 프로세스 2개로도 같은 확인을 하고 결과를 기록한다.
+   - 같은 고객, 같은 `Idempotency-Key` 이체 20건을 두 컨텍스트에 10건씩 동시에: 분개 1개
    - 계좌 20개(각 1,000,000원)에 랜덤 당행이체 2,000건(시드 `20261110`)을 두 컨텍스트에 반씩: M6-4 4절의 INV-1, INV-2, L1~L5 (L1의 총액은 20,000,000원)
    - 누적 0원 계좌에 600,000원 이체 10건을 두 컨텍스트에 5건씩 동시에: 성공 8건
    - 틀린 비밀번호 8건을 두 컨텍스트에 4건씩 동시에: 오류 횟수 5, `PASSWORD_LOCKED` 이력 1행
-2. 이체 API의 계좌 보호 전략을 설정값 `corebank.transfer.lock=db|redis-db`로 고를 수 있게 한다. `db`는 M6-3에서 고른 방식 그대로, `redis-db`는 출금·입금계좌의 Redisson 락을 계좌 ID 오름차순으로 잡은 뒤 M6-3 방식을 그대로 수행한다.
+2. 이체 API의 계좌 보호 전략을 설정값 `corebank.transfer.lock=db|redis-db`로 고를 수 있게 한다. `db`는 M6-3에서 고른 방식 그대로, `redis-db`는 출금, 입금계좌의 Redisson 락을 계좌 ID 오름차순으로 잡은 뒤 M6-3 방식을 그대로 수행한다.
 3. 처리량 측정: 계좌 10개 사이의 랜덤 이체 2,000건을 두 인스턴스에 반씩, 동시 요청 64개로 보낸다. 부하 도구는 학습자가 Java `HttpClient`로 작성한다(k6는 Phase 8에서 쓴다). 워밍업 3회 후 5회 측정, 중앙값 기록. 표 위에 JDK 버전, CPU 코어 수, OS를 적는다. 열: `전략 | 실행 | 소요 시간(ms) | TPS | p99(ms) | 5xx 수 | 409 수`.
 
 ### 6. 비교표와 결정 (`distributed-lock-report.md`)
-아래 열을 그대로 쓴다. 각 칸은 4절·5절에서 측정하거나 재현한 결과로 채우고, 재현하지 않은 칸은 "재현 안 함 + 근거 문헌"으로 적는다.
+아래 열을 그대로 쓴다. 각 칸은 4절, 5절에서 측정하거나 재현한 결과로 채우고, 재현하지 않은 칸은 "재현 안 함 + 근거 문헌"으로 적는다.
 
-| 전략 | 인스턴스 2대 정확성 (E1·E2) | 락 만료 시 (E3) | 프로세스 정지 시 (E4) | Redis 중단 시 (E5) | 정확성을 최종 보장하는 장치 | TPS 중앙값 | p99 | 필요한 인프라 |
+| 전략 | 인스턴스 2대 정확성 (E1, E2) | 락 만료 시 (E3) | 프로세스 정지 시 (E4) | Redis 중단 시 (E5) | 정확성을 최종 보장하는 장치 | TPS 중앙값 | p99 | 필요한 인프라 |
 |---|---|---|---|---|---|---|---|---|
 | `jvm` | | | | | | | | |
 | `db` | | | | | | | | |
@@ -98,16 +98,16 @@ curl -s localhost:8081/api/experiments/accounts/1
 `workspace/docs/test-scenarios/M6-8.md`에 표(번호 / Given / When / Then)를 쓰고 리뷰를 받은 뒤 구현한다. 4절 실험 E1~E5는 수동 실험이므로 표에 넣지 않고 보고서에 기록한다. 표에는 자동 테스트만 넣는다.
 
 반드시 포함할 경우 (최소 10개 행):
-1. 5절 1번의 4가지 경우 (4개 행), 각 행의 Then에 분개 수·잔액 합계·오류 횟수 등 구체 값
+1. 5절 1번의 4가지 경우 (4개 행), 각 행의 Then에 분개 수, 잔액 합계, 오류 횟수 등 구체 값
 2. `corebank.transfer.lock=redis-db`로 1번 4가지 중 랜덤 이체 경우를 다시 실행
-3. `redis-db`에서 Redis 컨테이너를 멈춘 뒤 이체 요청: 503 `LOCK_UNAVAILABLE`, 잔액·분개·한도 누적 변화 없음
+3. `redis-db`에서 Redis 컨테이너를 멈춘 뒤 이체 요청: 503 `LOCK_UNAVAILABLE`, 잔액, 분개, 한도 누적 변화 없음
 4. 실험 엔드포인트 `redis-fenced`에서 읽은 `version`이 그사이 바뀐 경우: 409 `STALE_WRITE`, 잔액 불변
 5. 실험 엔드포인트 락 대기 2초 초과: 409 `LOCK_TIMEOUT`
 6. `experiment` 프로파일이 아닐 때 `/api/experiments/**`가 404
-7. A→B 이체와 B→A 이체를 `redis-db`로 동시에 100쌍: 데드락·락 대기 타임아웃 0건, INV-2 성립
+7. A→B 이체와 B→A 이체를 `redis-db`로 동시에 100쌍: 데드락, 락 대기 타임아웃 0건, INV-2 성립
 
 ## 제약
-- Redis 락을 얻지 못했거나 Redis가 응답하지 않을 때 락 없이 이체를 진행하는 "대체 경로"를 만들지 않는다 — 장애 순간에 동시성 보호가 사라진다.
+- Redis 락을 얻지 못했거나 Redis가 응답하지 않을 때 락 없이 이체를 진행하는 "대체 경로"를 만들지 않는다: 장애 순간에 동시성 보호가 사라진다.
 - `redis-db` 전략에서도 M6-3의 DB 쪽 보호(비관적 락, 낙관적 락, 조건부 UPDATE 중 고른 것)를 제거하지 않는다. 제거한 버전을 측정하고 싶다면 실험 엔드포인트에서만 한다.
 - 실험 엔드포인트와 `experiment_account` 테이블은 `experiment` 프로파일 밖에서 만들어지지 않는다.
 - `kill -STOP`, `docker compose stop` 실험은 로컬 환경에서만 한다. 실험 후 `kill -CONT`, `docker compose start redis`로 되돌린다.

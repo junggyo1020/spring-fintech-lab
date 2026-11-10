@@ -1,6 +1,6 @@
 # M6-7 타행이체 시뮬레이션
 
-> 가이드 수준: L3 · 예상 시간: 7~9h · 선행: M6-3, M6-4
+> 가이드 수준: L3, 예상 시간: 7~9h, 선행: M6-3, M6-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -48,10 +48,10 @@ M6-3의 이체는 한 DB 트랜잭션 안에서 끝났다. 이 미션의 이체�
 | `SUCCEEDED` 확정 | `INTERBANK_SETTLE` | 타행이체미정산 | 대외결제예치금 |
 | `FAILED` 확정 | `INTERBANK_COMPENSATE` | 타행이체미정산 | 고객예금 A |
 
-요청 접수 분개는 `fintech-domain-facts` 6절의 분개다(확인일 2026-11-10). 정산·보상 분개와 `대외결제예치금` 계정은 **이 미션의 규칙**이다(실제 은행의 대외 정산 계정 처리는 은행마다 다르다).
+요청 접수 분개는 `fintech-domain-facts` 6절의 분개다(확인일 2026-11-10). 정산, 보상 분개와 `대외결제예치금` 계정은 **이 미션의 규칙**이다(실제 은행의 대외 정산 계정 처리는 은행마다 다르다).
 
 ### 3. API와 처리 흐름
-`POST /api/interbank-transfers` (헤더 `X-Customer-Id`, `Idempotency-Key`, 본문 `fromAccountNumber`, `toBankCode`, `toAccountNumber`, `amount`, `password`). M6-3의 멱등 규칙과 M6-4의 검사 순서·한도·비밀번호 규칙을 그대로 적용한다(주차별 계획상 M6-4가 먼저 끝나 있다).
+`POST /api/interbank-transfers` (헤더 `X-Customer-Id`, `Idempotency-Key`, 본문 `fromAccountNumber`, `toBankCode`, `toAccountNumber`, `amount`, `password`). M6-3의 멱등 규칙과 M6-4의 검사 순서, 한도, 비밀번호 규칙을 그대로 적용한다(주차별 계획상 M6-4가 먼저 끝나 있다).
 
 1. 트랜잭션 1: 검사 통과 후 출금계좌 잔액 감소, `account_transaction` `INTERBANK_OUT` 행, 요청 접수 분개, `interbank_transfer` 행(`REQUESTED`, `requestId` = 새 UUID), 1일 한도 누적을 커밋한다.
 2. 트랜잭션 2: 상태를 `SENT`로 바꾸고 보낸 시각을 기록해 커밋한다.
@@ -66,7 +66,7 @@ M6-3의 이체는 한 DB 트랜잭션 안에서 끝났다. 이 미션의 이체�
 | 읽기 타임아웃, 응답 도중 연결 끊김 | `UNKNOWN` | 없음 | 202, `status: UNKNOWN` |
 
 5. `GET /api/interbank-transfers/{id}`: 현재 상태를 돌려준다.
-6. 서킷 브레이커가 `OPEN`이면 트랜잭션 1 전에 거절한다: 503 `CLEARING_UNAVAILABLE`, 잔액·분개·한도 변화 없음.
+6. 서킷 브레이커가 `OPEN`이면 트랜잭션 1 전에 거절한다: 503 `CLEARING_UNAVAILABLE`, 잔액, 분개, 한도 변화 없음.
 
 ### 4. `UNKNOWN` 해소 (이 미션의 규칙)
 1. `UnknownTransferResolver`(이름은 바꿔도 된다)가 `@Scheduled(fixedDelay = 1000)`로 다음 조회 시각이 지난 `UNKNOWN` 이체를 조회한다.
@@ -104,7 +104,7 @@ M6-3의 이체는 한 DB 트랜잭션 안에서 끝났다. 이 미션의 이체�
 ### 7. 설계 문서 `workspace/docs/interbank-design.md`
 - 2절 상태 머신(Mermaid `stateDiagram-v2`)과 상태별 분개 표.
 - 3절 4번 표의 각 행이 README 7절 표의 어느 경우를 커버하는지.
-- 1절 모드 6개 각각에서 이체 1건의 시퀀스(Mermaid `sequenceDiagram`, 6개 그림)와 최종 상태·분개 목록.
+- 1절 모드 6개 각각에서 이체 1건의 시퀀스(Mermaid `sequenceDiagram`, 6개 그림)와 최종 상태, 분개 목록.
 - 4절 4번 규칙(404 두 번이면 실패)이 틀리는 경우가 있는지와, 이 시뮬레이터에서는 왜 그 경우가 생기지 않는지.
 
 ## 직접 작성할 테스트 시나리오
@@ -126,8 +126,8 @@ tasks.register<Test>("externalTest") {
 Then에는 이체 상태, 계좌 잔액, `타행이체미정산` 잔액, 분개 유형별 개수를 쓴다.
 
 반드시 포함할 경우 (최소 16개 행):
-1. `SUCCESS`: `SUCCEEDED`, 분개 2개(요청·정산), `타행이체미정산` 0원
-2. `REJECT`: `FAILED`, 분개 2개(요청·보상), 출금계좌 잔액 원래대로, 1일 한도 누적 원래대로
+1. `SUCCESS`: `SUCCEEDED`, 분개 2개(요청, 정산), `타행이체미정산` 0원
+2. `REJECT`: `FAILED`, 분개 2개(요청, 보상), 출금계좌 잔액 원래대로, 1일 한도 누적 원래대로
 3. `UNAVAILABLE`: 재시도 3회(대외기관 수신 4회) 후 `FAILED`, 보상
 4. `UNAVAILABLE` 2회 후 `SUCCESS`로 바뀜: 재시도로 `SUCCEEDED`
 5. `TIMEOUT_AFTER_PROCESS`: API 202 `UNKNOWN`, 직후 `타행이체미정산` == 이체 금액, resolver 조회 후 `SUCCEEDED`, 보상 분개 0개
@@ -144,9 +144,9 @@ Then에는 이체 상태, 계좌 잔액, `타행이체미정산` 잔액, 분개 
 16. 상태가 `UNKNOWN`인 이체가 있는 계좌의 해지 요청: M6-1 T6 거부
 
 ## 제약
-- `fake-kftc` 호출을 `@Transactional` 메서드 안에서 하지 않는다 — 읽기 타임아웃 3초 동안 DB 커넥션과 계좌 락을 잡고 있게 된다(Phase 5 M5-6 트랜잭션 함정).
+- `fake-kftc` 호출을 `@Transactional` 메서드 안에서 하지 않는다: 읽기 타임아웃 3초 동안 DB 커넥션과 계좌 락을 잡고 있게 된다(Phase 5 M5-6 트랜잭션 함정).
 - 읽기 타임아웃을 실패로 보고 보상하지 않는다. 보상은 대외기관이 처리하지 않았다는 근거(422, 503, 연결 실패, 4절 4번의 404 규칙)가 있을 때만 한다.
-- 이미 기록한 요청 접수 분개를 수정·삭제하지 않는다. 결과는 정산 또는 보상 분개를 새로 추가해 반영한다(M6-2).
+- 이미 기록한 요청 접수 분개를 수정, 삭제하지 않는다. 결과는 정산 또는 보상 분개를 새로 추가해 반영한다(M6-2).
 - 테스트에서 `Thread.sleep`으로 resolver를 기다리지 않는다. 조건이 될 때까지 짧은 간격으로 확인하는 대기(예: Awaitility `org.awaitility:awaitility`, 최대 대기 시간 명시)를 쓰거나 resolver 메서드를 직접 호출한다.
 
 ## 힌트
@@ -158,7 +158,7 @@ Then에는 이체 상태, 계좌 잔액, `타행이체미정산` 잔액, 분개 
 
 ## 완료 기준
 - [ ] `cd workspace/fake-kftc && ./gradlew bootRun`으로 9095 포트에 띄운 뒤, `cd workspace/corebank && ./gradlew test externalTest`에서 M6-7 시나리오 표의 모든 행에 대응하는 테스트가 통과한다 (`fake-kftc`를 띄우지 않은 상태의 `./gradlew test`도 통과해야 한다)
-- [ ] 이름에 `INV-4`가 들어간 테스트가 있고, `UNKNOWN` 상태 직후와 확정 후 두 시점에서 `타행이체미정산` 잔액 == `REQUESTED`·`SENT`·`UNKNOWN` 이체 금액 합계를 assert한다
+- [ ] 이름에 `INV-4`가 들어간 테스트가 있고, `UNKNOWN` 상태 직후와 확정 후 두 시점에서 `타행이체미정산` 잔액 == `REQUESTED`, `SENT`, `UNKNOWN` 이체 금액 합계를 assert한다
 - [ ] 시나리오 15의 결과(상태별 건수, 재시도 횟수, 서킷 브레이커 `OPEN` 횟수, 대사 불일치 수 0)가 `workspace/docs/interbank-design.md` 부록에 표로 있다
 - [ ] `curl -s localhost:8080/actuator/health`에 서킷 브레이커 상태가 보이도록 설정했거나, 보이지 않는다면 Resilience4j 상태를 확인한 다른 방법이 설계 문서에 있다
 - [ ] PR 본문에 `workspace/docs/test-scenarios/M6-7.md` 표가 붙어 있다

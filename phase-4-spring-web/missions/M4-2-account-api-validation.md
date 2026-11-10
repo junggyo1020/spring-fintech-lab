@@ -1,30 +1,30 @@
 # M4-2 계좌 API와 입력 검증
 
-> 가이드 수준: L2 · 예상 시간: 5~6h · 선행: M4-1
+> 가이드 수준: L2, 예상 시간: 5~6h, 선행: M4-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 계좌 개설·조회·입금·출금 API 4개를 만들고, 개설 응답의 `201`과 `Location` 헤더를 테스트로 검증한다.
-- 요청·응답을 `record` DTO로 분리해, 도메인 클래스(`Account`, `Transaction`)가 JSON으로 직접 나가지 않음을 보여준다.
+- 계좌 개설, 조회, 입금, 출금 API 4개를 만들고, 개설 응답의 `201`과 `Location` 헤더를 테스트로 검증한다.
+- 요청, 응답을 `record` DTO로 분리해, 도메인 클래스(`Account`, `Transaction`)가 JSON으로 직접 나가지 않음을 보여준다.
 - 커스텀 Bean Validation 제약 2개(`@AccountNumberFormat`, `@ValidMoney`)를 만들고, 경계값 입력 12종이 모두 400이 되는 테스트를 작성한다.
 
 ## 배경
 금융 API의 첫 방어선은 입력 검증이다. 금액 `"10000.5"`를 원화 계좌에 받아 내부에서 반올림하면 고객이 보낸 금액과 장부 금액이 달라지고, 대사(Phase 6)에서 차이가 난다.
 검증을 빠뜨리면 잘못된 값이 도메인까지 들어가 `IllegalArgumentException` → 500이 되고, 클라이언트는 자기 잘못인지 서버 장애인지 구분하지 못한다.
-M4-1에서 만든 HTTP 계층 위에 Phase 1의 `Account`·`Money`·`AccountNumber`와 Phase 3의 서비스 빈을 연결한다.
+M4-1에서 만든 HTTP 계층 위에 Phase 1의 `Account`, `Money`, `AccountNumber`와 Phase 3의 서비스 빈을 연결한다.
 
 ## 요구사항
 
 ### 1. 엔드포인트
 
-| 메서드·경로 | 요청 본문 | 성공 응답 |
+| 메서드, 경로 | 요청 본문 | 성공 응답 |
 |---|---|---|
 | `POST /accounts` | `CreateAccountRequest` | `201`, `Location: /accounts/{number}`, 본문 `AccountResponse` |
 | `GET /accounts/{number}` | 없음 | `200`, `AccountResponse` |
 | `POST /accounts/{number}/deposits` | `MoneyMovementRequest` | `200`, `TransactionResponse` |
 | `POST /accounts/{number}/withdrawals` | `MoneyMovementRequest` | `200`, `TransactionResponse` |
 
-입금·출금은 만든 거래를 단건으로 조회하는 URI가 없으므로 `201` + `Location` 대신 `200`을 쓴다(README 2절 규칙).
+입금, 출금은 만든 거래를 단건으로 조회하는 URI가 없으므로 `201` + `Location` 대신 `200`을 쓴다(README 2절 규칙).
 
 ### 2. JSON 형식 (이 Phase 전체에서 같은 형식을 쓴다)
 
@@ -62,12 +62,12 @@ M4-1에서 만든 HTTP 계층 위에 Phase 1의 `Account`·`Money`·`AccountNumb
 
 | 필드 | 규칙 | 위반 시 |
 |---|---|---|
-| `ownerName` | `@NotBlank` (`null`·빈 문자열·공백만 금지) + `@Size(max = 20)` (`String#length()` 기준) | 400 |
+| `ownerName` | `@NotBlank` (`null`, 빈 문자열, 공백만 금지) + `@Size(max = 20)` (`String#length()` 기준) | 400 |
 | `currency` (개설 요청) | `@NotNull` + `@Pattern(regexp = "KRW\|USD")`, 대소문자 구분 (`"krw"`는 위반) | 400 |
 | `money` | `@NotNull` + `@Valid`, `MoneyDto`에 `@ValidMoney` | 400 |
 | `money.amount` | 정규식 `^(0\|[1-9][0-9]*)(\.[0-9]+)?$`, 정수부 최대 18자리, 소수 자리 수 ≤ 통화 scale (KRW 0, USD 2), 값 > 0 | 400 |
 | `money.currency` | `"KRW"` 또는 `"USD"` | 400 |
-| `memo` | 생략·`null` 허용(빈 문자열로 저장), `@Size(max = 50)` | 400 |
+| `memo` | 생략, `null` 허용(빈 문자열로 저장), `@Size(max = 50)` | 400 |
 | `{number}` (경로) | `@AccountNumberFormat`: 정규식 `^[0-9]{3}-[0-9]{4}-[0-9]{4}$` | 400 |
 
 - 표 안의 `\|`는 마크다운 표를 깨지 않기 위한 표기다. 코드에는 `|` 하나만 쓴다.
@@ -90,7 +90,7 @@ public @interface ValidMoney { /* message, groups, payload */ }
 ```
 
 - `@ValidMoney`는 `amount`와 `currency`를 함께 봐야 하므로(소수 자리 수 ≤ 통화 scale) 클래스 단위 제약이다.
-- `null` 처리: `AccountNumberFormatValidator`는 `null`을 통과시킨다(`null` 금지는 `@NotNull` 담당 — Bean Validation 관례). 경로 변수는 `null`이 될 수 없으므로 문제없다. `ValidMoneyValidator`는 `amount`나 `currency`가 `null`이면 위반으로 판정한다.
+- `null` 처리: `AccountNumberFormatValidator`는 `null`을 통과시킨다(`null` 금지는 `@NotNull` 담당: Bean Validation 관례). 경로 변수는 `null`이 될 수 없으므로 문제없다. `ValidMoneyValidator`는 `amount`나 `currency`가 `null`이면 위반으로 판정한다.
 
 ### 6. 계층 규칙
 - 컨트롤러 → Phase 3의 애플리케이션 서비스(`BankService` 빈) 호출 → 반환된 도메인 객체를 응답 DTO로 변환한다.
@@ -132,7 +132,7 @@ public @interface ValidMoney { /* message, groups, payload */ }
 400 응답의 본문 형식은 M4-3에서 정한다. 이 미션은 상태 코드만 검증한다. 없는 계좌 조회(404)도 M4-3에서 다룬다.
 
 ## 제약
-- 금액을 `double`·`float`·`long`으로 받지 않는다. `String` → 검증 → `BigDecimal`(`Money.of`) 순서를 지킨다.
+- 금액을 `double`, `float`, `long`으로 받지 않는다. `String` → 검증 → `BigDecimal`(`Money.of`) 순서를 지킨다.
 - 컨트롤러 메서드 안에서 `if (amount ...)`로 검증하지 않는다. 모든 형식 검증은 Bean Validation 제약으로 표현한다.
 - 컨트롤러가 `Account`, `Transaction`, `Money`를 직접 반환하지 않는다.
 - 커스텀 제약의 정규식 `Pattern`은 `static final` 필드로 한 번만 컴파일한다.
@@ -158,6 +158,6 @@ Spring Framework 6.1부터 컨트롤러 메서드 파라미터에 `@Constraint` 
 - [ ] `grep -rnwE "double|float" src/main/java/lab/bank/web` 결과가 0줄이다.
 
 ## 생각해볼 질문
-1. 금액 소수 자리 초과(`"10000.0"` KRW)를 반올림해서 받는 것과 400으로 거절하는 것은 고객·은행 각각에게 어떤 위험이 있나?
+1. 금액 소수 자리 초과(`"10000.0"` KRW)를 반올림해서 받는 것과 400으로 거절하는 것은 고객, 은행 각각에게 어떤 위험이 있나?
 2. `@ValidMoney` 검증(형식)과 `Account#deposit`의 금액 검증(도메인)이 둘 다 "금액 > 0"을 검사한다. 중복을 없애려면 어느 쪽을 지워야 하나? 지우면 안 되는 이유가 있다면 무엇인가? (Phase 5에서 배치가 `BankService`를 직접 호출하는 경우를 떠올린다)
 3. 계좌번호를 `AtomicLong`으로 발급하면 서버를 재시작했을 때와 서버를 2대로 늘렸을 때 각각 무슨 일이 생기나? Phase 5에서 DB 시퀀스나 `AUTO_INCREMENT`로 바꾸면 무엇이 해결되나?

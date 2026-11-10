@@ -1,15 +1,15 @@
 # M6-6 일 마감과 대사
 
-> 가이드 수준: L3 · 예상 시간: 4~6h · 선행: M6-5
+> 가이드 수준: L3, 예상 시간: 4~6h, 선행: M6-5
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 업무일자마다 계좌별 마감 잔액 스냅샷을 남기고, 대사 규칙 R1~R5로 원장·잔액·거래내역의 불일치를 찾는 일 마감 Job을 만든다.
-- 테스트가 일부러 망가뜨린 행 1개(잔액 +1원, 균형 깨진 분개 라인, 분개 없는 거래내역)를 대사 Job이 정확히 그 계좌·그 규칙으로 찾아내는 것을 보여준다.
+- 업무일자마다 계좌별 마감 잔액 스냅샷을 남기고, 대사 규칙 R1~R5로 원장, 잔액, 거래내역의 불일치를 찾는 일 마감 Job을 만든다.
+- 테스트가 일부러 망가뜨린 행 1개(잔액 +1원, 균형 깨진 분개 라인, 분개 없는 거래내역)를 대사 Job이 정확히 그 계좌, 그 규칙으로 찾아내는 것을 보여준다.
 - 대사 도중 이체가 계속 들어와도 거짓 불일치가 0건인 것을 테스트로 보여준다.
 
 ## 배경
-`account.balance`는 조회를 빠르게 하려고 둔 값이다. 원장(분개 라인)과 이 값이 어긋나는 버그 — 분개 없이 잔액만 UPDATE, 운영자의 수기 SQL, 롤백되지 않은 부분 쓰기 — 는 API 응답만으로는 보이지 않는다. 고객이 "잔액이 이상하다"고 문의하기 전에 은행이 먼저 찾아야 한다.
+`account.balance`는 조회를 빠르게 하려고 둔 값이다. 원장(분개 라인)과 이 값이 어긋나는 버그: 분개 없이 잔액만 UPDATE, 운영자의 수기 SQL, 롤백되지 않은 부분 쓰기: 는 API 응답만으로는 보이지 않는다. 고객이 "잔액이 이상하다"고 문의하기 전에 은행이 먼저 찾아야 한다.
 그래서 은행은 매일 마감 후 두 기록을 비교하는 대사를 돌리고, 불일치는 자동으로 고치지 않고 리포트로 남긴다.
 M6-5에서 Spring Batch Job과 재시작을 다뤘다. 이 미션은 같은 도구로 "돈을 움직이지 않고 검사만 하는" Job을 만들고, M6-1에서 규칙만 정해둔 휴면 전환을 실제로 실행한다.
 
@@ -51,10 +51,10 @@ M6-5에서 Spring Batch Job과 재시작을 다뤘다. 이 미션은 같은 도�
 `workspace/docs/test-scenarios/M6-6.md`에 표(번호 / Given / When / Then)를 쓰고 리뷰를 받은 뒤 구현한다. 손상 주입은 테스트 코드에서 `JdbcTemplate`으로 SQL을 직접 실행해 만든다. Then에는 불일치 행의 규칙 코드, 대상 ID, 기대값, 실제값, 차이를 쓴다.
 
 반드시 포함할 경우 (최소 13개 행):
-1. 정상 데이터(계좌 10개, 입금·출금·이체·이자 섞어 50건): 불일치 0건, `business_day` `CLOSED`, 종료 코드 `COMPLETED`
-2. 계좌 X에 `UPDATE account SET balance = balance + 1`: R2 1행(X, 차이 +1), R4 1행(차이 +1), R1·R3·R5 0행, 다른 계좌 불일치 0
+1. 정상 데이터(계좌 10개, 입금, 출금, 이체, 이자 섞어 50건): 불일치 0건, `business_day` `CLOSED`, 종료 코드 `COMPLETED`
+2. 계좌 X에 `UPDATE account SET balance = balance + 1`: R2 1행(X, 차이 +1), R4 1행(차이 +1), R1, R3, R5 0행, 다른 계좌 불일치 0
 3. 업무일자 D인 기존 분개에 고객예금 X 차변 500원 라인 INSERT: R1(그 분개), R2(X), R3(X), R4, R5 각 1행, 차이 값을 부호까지 적는다
-4. 분개 없이 `account_transaction`에 X의 입금 1,000원 행 INSERT: R3 1행(X)만, R1·R2·R4·R5 0행
+4. 분개 없이 `account_transaction`에 X의 입금 1,000원 행 INSERT: R3 1행(X)만, R1, R2, R4, R5 0행
 5. 손상 2와 4를 서로 다른 계좌에 동시에 주입: 각 계좌의 불일치만 나옴
 6. 불일치가 있는 마감 후 `account.balance`가 손상된 값 그대로인 것 (대사가 고치지 않음)
 7. 대사 실행 중 다른 스레드가 당행이체 500건을 계속 보냄: 불일치 0건
@@ -65,8 +65,8 @@ M6-5에서 Spring Batch Job과 재시작을 다뤘다. 이 미션은 같은 도�
 12. 스냅샷: D의 스냅샷 금액 == D−1 스냅샷 + R3의 B값 (계좌 3개 이상으로 확인)
 
 ## 제약
-- 대사 Job에서 `account`, `journal_entry`, `journal_line`, `account_transaction`에 UPDATE·DELETE·INSERT를 하지 않는다(휴면 전환 `dormancyStep`의 `account.status`와 이력 INSERT만 예외).
-- 불일치를 로그로만 남기지 않는다 — 로그는 보관 기간이 지나면 사라지고 집계 쿼리로 조회할 수 없다. 반드시 `reconciliation_mismatch` 테이블에 남긴다.
+- 대사 Job에서 `account`, `journal_entry`, `journal_line`, `account_transaction`에 UPDATE, DELETE, INSERT를 하지 않는다(휴면 전환 `dormancyStep`의 `account.status`와 이력 INSERT만 예외).
+- 불일치를 로그로만 남기지 않는다: 로그는 보관 기간이 지나면 사라지고 집계 쿼리로 조회할 수 없다. 반드시 `reconciliation_mismatch` 테이블에 남긴다.
 - R1~R5를 계좌마다 분개 전체를 메모리로 읽어 Java에서 더하는 방식으로 구현하지 않는다. 합계는 SQL 집계로 구한다.
 
 ## 힌트
@@ -78,7 +78,7 @@ Spring Batch Reference 6.0 "Configuring a Step" → "Controlling Step Flow"에�
 
 ## 완료 기준
 - [ ] `./gradlew test`에서 M6-6 시나리오 표의 모든 행에 대응하는 테스트가 통과한다
-- [ ] 손상 주입 테스트(시나리오 2~5)가 불일치 행의 규칙 코드·대상 ID·차이를 모두 assert한다
+- [ ] 손상 주입 테스트(시나리오 2~5)가 불일치 행의 규칙 코드, 대상 ID, 차이를 모두 assert한다
 - [ ] 시나리오 7(대사 중 이체 500건)을 `@RepeatedTest(5)`로 돌려 5번 모두 불일치 0건이다
 - [ ] `workspace/docs/batch-design.md`에 4절의 Step 구성도, R1~R5 SQL과 `EXPLAIN` `key` 열, R2 트랜잭션 범위 비교가 있다
 - [ ] PR 본문에 `workspace/docs/test-scenarios/M6-6.md` 표가 붙어 있다

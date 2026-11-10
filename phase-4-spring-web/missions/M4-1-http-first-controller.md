@@ -1,6 +1,6 @@
 # M4-1 HTTP와 첫 컨트롤러
 
-> 가이드 수준: L2 · 예상 시간: 3~4h · 선행: M3-6
+> 가이드 수준: L2, 예상 시간: 3~4h, 선행: M3-6
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -19,7 +19,7 @@ M3-6까지 만든 Spring Boot 애플리케이션은 웹 서버가 없는 콘솔 
 2. `lab.bank.web.HealthController`를 만든다.
    - `GET /health` → `200`, `Content-Type: application/json`, 본문 `{"status":"UP"}`
    - 응답 본문은 `record HealthResponse(String status)`로 만든다. `Map`을 반환하지 않는다.
-   - 다른 경로·메서드는 만들지 않는다. `POST /health`는 Spring MVC가 405로 응답하게 둔다.
+   - 다른 경로, 메서드는 만들지 않는다. `POST /health`는 Spring MVC가 405로 응답하게 둔다.
    - Spring Boot Actuator의 `/actuator/health`를 쓰지 않는다. 이 미션의 목적은 컨트롤러를 직접 만드는 것이다.
 3. 아래 7개 명령을 실행하고, 출력 전체를 `til/phase-4/M4-1-curl.md`에 붙인다. 각 출력 아래에 "요청 줄 / 요청 헤더 / 상태 줄 / 응답 헤더 / 본문" 5칸 표를 만들어 해당 줄을 옮긴다.
 

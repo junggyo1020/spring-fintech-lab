@@ -1,6 +1,6 @@
-# M5-9 DB 데드락과 인덱스·실행계획
+# M5-9 DB 데드락과 인덱스, 실행계획
 
-> 가이드 수준: L2 · 예상 시간: 4~6h · 선행: M5-8
+> 가이드 수준: L2, 예상 시간: 4~6h, 선행: M5-8
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -25,8 +25,8 @@ M5-8의 `PessimisticWithdrawService`에서 쓴 `PESSIMISTIC_WRITE` 조회를 이
    | 기다린 락 (index, `lock_mode`, 레코드 기본 키 값) | | |
    | 롤백 대상 (`WE ROLL BACK TRANSACTION`) | | |
 3. **`lab.bank.dblock.LockingTransferService`.** `TransferResult transfer(TransferCommand command)`, `@Transactional`. 두 계좌를 M5-8의 `PESSIMISTIC_WRITE` 조회로 잠근 뒤 M5-4 `JpaTransferEngine`과 같은 검증 규칙으로 이체한다. 잠그는 순서를 바꿀 수 있게 두 가지 모드를 둔다 (방법 자유):
-   - `REQUEST_ORDER` — 출금 계좌 → 입금 계좌 순서 (데드락 재현용)
-   - `NUMBER_ORDER` — 계좌번호 문자열 오름차순
+   - `REQUEST_ORDER`: 출금 계좌 → 입금 계좌 순서 (데드락 재현용)
+   - `NUMBER_ORDER`: 계좌번호 문자열 오름차순
 4. **`lab.bank.dblock.DeadlockRetryExecutor`.** 이체를 실행하다 `PessimisticLockingFailureException`이 나고 그 가장 구체적인 원인(`getMostSpecificCause()`)이 MySQL 에러 코드 1213인 `SQLException`이면, 트랜잭션 **바깥에서** 처음부터 다시 실행한다. 최대 시도 3회(첫 시도 포함), 재시도 사이 대기 없음 (이 미션의 규칙). 1213이 아닌 예외(예: 1205 락 대기 시간 초과, 잔액 부족)는 재시도하지 않는다. 데드락 발생 횟수를 테스트에서 읽을 수 있게 노출한다.
 5. **인덱스와 락 범위 실험 (`bank_lab`).** 초기화 후 아래 SQL로 계좌 96개를 더 넣어 100개로 만든다 (고객 이름 `고객001`~`고객096`, 잔액 10,000).
    ```sql
@@ -53,7 +53,7 @@ M5-8의 `PessimisticWithdrawService`에서 쓴 `PESSIMISTIC_WRITE` 조회를 이
 
 ## 테스트 시나리오
 수동 실험(1, 6~9)은 `bank_lab`에서 root 세션으로 실행한다. B 세션은 먼저 `SET SESSION innodb_lock_wait_timeout = 10;`을 실행한다. Spring 테스트(2~5)는 Testcontainers DB에서 A = `110-0000-0001`, B = `110-0000-0002`로 한다.
-수동 실험(1, 6~12)의 기대 결과는 `mysql:8.4` 이미지(8.4.13)에서 이 문서의 스키마·데이터로 실행해 확인한 값이다(2026-11-10). 시나리오 1은 3회 실행 모두 세션 B가 롤백됐다. Spring 테스트 2의 예외는 JdbcTemplate·JPA 모두 `CannotAcquireLockException`(Spring Boot 4.1.2)이었다.
+수동 실험(1, 6~12)의 기대 결과는 `mysql:8.4` 이미지(8.4.13)에서 이 문서의 스키마, 데이터로 실행해 확인한 값이다(2026-11-10). 시나리오 1은 3회 실행 모두 세션 B가 롤백됐다. Spring 테스트 2의 예외는 JdbcTemplate, JPA 모두 `CannotAcquireLockException`(Spring Boot 4.1.2)이었다.
 
 ### 시나리오 1: 수동 데드락
 | 시각 | 세션 A | 세션 B | 기대 결과 |
@@ -69,7 +69,7 @@ M5-8의 `PessimisticWithdrawService`에서 쓴 `PESSIMISTIC_WRITE` 조회를 이
 |---|---|---|---|
 | 2 | A = 1,000,000, B = 1,000,000 | 스레드 2개, 각자 `TransactionTemplate` 안에서 스레드 1은 A 잠금 → 래치 대기 → B 잠금, 스레드 2는 B 잠금 → 래치 대기 → A 잠금 (`PESSIMISTIC_WRITE` 조회만 사용, 래치 2개로 "둘 다 첫 락을 잡은 뒤" 두 번째 락 요청) | 정확히 1개 스레드가 `PessimisticLockingFailureException` 하위 예외(구체 클래스 기록), `getMostSpecificCause()`의 에러 코드 1213. 다른 스레드는 정상 커밋 |
 | 3 | A = 1,000,000, B = 1,000,000 | `REQUEST_ORDER`, 재시도 없이 A→B 1,000원 50건 + B→A 1,000원 50건 동시 (32 스레드) | 성공 + 데드락 실패 = 100, 데드락 이외 예외 0, A + B = 2000000.00, A = 1,000,000 − 1,000 × (A→B 성공) + 1,000 × (B→A 성공). 5회 실행해 회차별 데드락 실패 수 기록 |
-| 4 | 3번과 같음 | `REQUEST_ORDER` + `DeadlockRetryExecutor`(최대 3회) | 성공 + 재시도 소진 = 100, A + B = 2000000.00, 3번의 등식 성립. 회차별 데드락 발생 수·재시도 소진 수 기록 |
+| 4 | 3번과 같음 | `REQUEST_ORDER` + `DeadlockRetryExecutor`(최대 3회) | 성공 + 재시도 소진 = 100, A + B = 2000000.00, 3번의 등식 성립. 회차별 데드락 발생 수, 재시도 소진 수 기록 |
 | 5 | 3번과 같음 | `NUMBER_ORDER` + `DeadlockRetryExecutor`(최대 3회) | 성공 100, **데드락 발생 0**, A = 1000000.00, B = 1000000.00, `TRANSFER_OUT` 행 100, `TRANSFER_IN` 행 100 |
 
 계산식 (5번): A = 1,000,000 − 1,000 × 50 + 1,000 × 50 = 1,000,000. B도 같다.

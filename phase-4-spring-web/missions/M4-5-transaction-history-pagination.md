@@ -1,13 +1,13 @@
 # M4-5 거래내역 조회와 커서 페이지네이션
 
-> 가이드 수준: L2 · 예상 시간: 4~5h · 선행: M4-3
+> 가이드 수준: L2, 예상 시간: 4~5h, 선행: M4-3
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- `GET /accounts/{number}/transactions`를 커서 방식으로 만들고, 거래 25건을 20건 + 5건 두 페이지로 빠짐없이·중복 없이 받는 테스트를 작성한다.
+- `GET /accounts/{number}/transactions`를 커서 방식으로 만들고, 거래 25건을 20건 + 5건 두 페이지로 빠짐없이, 중복 없이 받는 테스트를 작성한다.
 - 두 페이지 조회 사이에 새 거래가 추가돼도 두 번째 페이지 결과가 바뀌지 않음을 테스트로 보여주고, 같은 상황에서 오프셋 방식은 어떤 거래를 두 번 돌려주는지 TIL에 표로 적는다.
-- 시각이 같은 거래 3건이 `size=2`로 나뉘어도 누락·중복이 없음을 보여준다.
-- 위조·변조된 커서 5종을 400 `INVALID_CURSOR`로 거절한다.
+- 시각이 같은 거래 3건이 `size=2`로 나뉘어도 누락, 중복이 없음을 보여준다.
+- 위조, 변조된 커서 5종을 400 `INVALID_CURSOR`로 거절한다.
 
 ## 배경
 거래내역은 계좌당 수년 치가 쌓이고, 앱은 최신 거래부터 스크롤하며 조금씩 불러온다.
@@ -49,13 +49,13 @@ Base64 URL-safe, 패딩 없음 ( UTF-8 문자열 "v1|{계좌번호}|{from}|{to}|
 ```
 
 - `from`, `to`는 기본값을 적용한 뒤의 실제 값이다. `occurredAt`은 `DateTimeFormatter.ISO_LOCAL_DATE_TIME`으로 쓴다.
-- `cursor`와 함께 `from`·`to`를 보내면 커서 안의 값과 같아야 한다. 생략하면 커서 안의 값을 쓴다. `size`는 페이지마다 바꿔도 된다.
+- `cursor`와 함께 `from`, `to`를 보내면 커서 안의 값과 같아야 한다. 생략하면 커서 안의 값을 쓴다. `size`는 페이지마다 바꿔도 된다.
 
 | 커서 거절 조건 | 응답 |
 |---|---|
 | Base64 URL 디코딩 실패 (`!!!`) | 400 `INVALID_CURSOR` |
 | `\|`로 나눈 조각이 6개가 아님, 첫 조각이 `v1`이 아님 | 400 `INVALID_CURSOR` |
-| 날짜·시각 파싱 실패 | 400 `INVALID_CURSOR` |
+| 날짜, 시각 파싱 실패 | 400 `INVALID_CURSOR` |
 | 커서의 계좌번호 ≠ 경로의 `{number}` | 400 `INVALID_CURSOR` |
 | 커서의 `from`/`to` ≠ 쿼리의 `from`/`to` (쿼리에 보낸 경우) | 400 `INVALID_CURSOR` |
 
@@ -90,7 +90,7 @@ public interface CursorCodec {
 | # | 준비(Given) | 실행(When) | 기대 결과(Then) |
 |---|---|---|---|
 | 1 | 25건 준비 | `GET /accounts/A/transactions` | `200`, `$.items.length()` = `20`, `$.items[0].occurredAt` = `"2026-11-01T09:24:00"`, `$.items[0].balanceAfter.amount` = `"25000"`, `$.items[19].balanceAfter.amount` = `"6000"`, `$.nextCursor` ≠ `null` |
-| 2 | 1번 이후 | `GET ...?cursor={1번 nextCursor}` | `200`, `items.length()` = `5`, `items[0].balanceAfter.amount` = `"5000"`, `items[4].balanceAfter.amount` = `"1000"`, `$.nextCursor` = `null`. 1·2번 `transactionId` 25개가 모두 다름 |
+| 2 | 1번 이후 | `GET ...?cursor={1번 nextCursor}` | `200`, `items.length()` = `5`, `items[0].balanceAfter.amount` = `"5000"`, `items[4].balanceAfter.amount` = `"1000"`, `$.nextCursor` = `null`. 1, 2번 `transactionId` 25개가 모두 다름 |
 | 3 | 1번 이후 `Clock`을 `2026-11-01T09:25:00`으로 옮겨 1,000원 입금, 조회 시점 `Clock`으로 복귀 | 2번과 같은 요청 | 2번과 같은 5건 (`balanceAfter` 5000, 4000, 3000, 2000, 1000) |
 | 4 | 25건 준비 | `size=100` | `items.length()` = `25`, `nextCursor` = `null` |
 | 5 | 25건 준비 | `size=25` | `items.length()` = `25`, `nextCursor` = `null` (`size + 1`건 조회로 판정) |
@@ -109,7 +109,7 @@ public interface CursorCodec {
 | 18 | `A` | `from=2026-13-01` | `400`, `$.errors[0].field` = `"from"`, `$.errors[0].code` = `"TypeMismatch"` |
 | 19 | `A` | `cursor=!!!` | `400`, `$.code` = `"INVALID_CURSOR"` |
 | 20 | `A` | `cursor` = Base64 URL(`"hello"`) = `aGVsbG8` | `400`, `$.code` = `"INVALID_CURSOR"` |
-| 21 | `A`·`B` 모두 25건 준비 | `GET /accounts/B/transactions?cursor={A의 1번 nextCursor}` | `400`, `$.code` = `"INVALID_CURSOR"` |
+| 21 | `A`, `B` 모두 25건 준비 | `GET /accounts/B/transactions?cursor={A의 1번 nextCursor}` | `400`, `$.code` = `"INVALID_CURSOR"` |
 | 22 | 1번 이후 | `?cursor={1번 nextCursor}&from=2026-11-01` (커서 안의 `from`은 `2026-10-11`) | `400`, `$.code` = `"INVALID_CURSOR"` |
 | 23 | 1번 이후 | `cursor` = Base64 URL(`"v2\|"` + 1번 커서를 디코딩한 문자열의 4번째 문자부터) | `400`, `$.code` = `"INVALID_CURSOR"` |
 
@@ -117,7 +117,7 @@ public interface CursorCodec {
 
 ## 제약
 - 오프셋(`page`, `offset`) 파라미터를 만들지 않는다.
-- 커서에 계좌 소유자 이름·잔액을 넣지 않는다. Base64는 암호화가 아니라 누구나 디코딩할 수 있다.
+- 커서에 계좌 소유자 이름, 잔액을 넣지 않는다. Base64는 암호화가 아니라 누구나 디코딩할 수 있다.
 - 매 요청마다 계좌의 전체 거래를 정렬한 복사본을 만드는 것은 이 미션(메모리 저장소)에서는 허용한다. 대신 TIL에 Phase 5에서 바꿔야 할 지점으로 적는다.
 
 ## 힌트

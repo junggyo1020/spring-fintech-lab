@@ -1,12 +1,12 @@
 # M3-1 나만의 DI 컨테이너
 
-> 가이드 수준: L2 · 예상 시간: 5~6h · 선행: M2-7
+> 가이드 수준: L2, 예상 시간: 5~6h, 선행: M2-7
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - 패키지를 스캔해 `@MyComponent` 클래스를 찾고, 단일 생성자의 파라미터 타입으로 의존 객체를 찾아 주입하는 컨테이너를 JDK 리플렉션만으로 구현한다.
 - 순환 참조를 생성 시점에 감지하고, 예외 메시지에 순환 경로(`A -> B -> A`)를 정확히 출력하는 테스트 6개를 통과시킨다.
-- 인터페이스 타입 주입에서 구현체 0개·1개·2개 이상일 때의 동작을 테스트로 보여준다.
+- 인터페이스 타입 주입에서 구현체 0개, 1개, 2개 이상일 때의 동작을 테스트로 보여준다.
 - 직접 만든 컨테이너와 Spring `ApplicationContext`의 기능 차이 8가지를 표로 정리한다.
 
 ## 배경
@@ -76,7 +76,7 @@ public final class MiniContainer {
 | 11 | `cycle.tail`: `@MyComponent Entry(Loop1)`, `@MyComponent Loop1(Loop2)`, `@MyComponent Loop2(Loop1)` | 컨테이너 생성 | 메시지가 정확히 `순환 참조: Loop1 -> Loop2 -> Loop1` (`Entry`는 순환 밖이라 포함하지 않음) |
 | 12 | `cycle.iface`: 인터페이스 `Notifier`, `@MyComponent OrderService(Notifier)`, `@MyComponent PushNotifier(OrderService) implements Notifier` | 컨테이너 생성 | 메시지가 정확히 `순환 참조: OrderService -> PushNotifier -> OrderService` |
 | 13 | `ctor.two`: `@MyComponent TwoCtors`에 `TwoCtors()`와 `TwoCtors(String)` 2개 | 컨테이너 생성 | `BeanCreationException`, 메시지에 `TwoCtors`와 `2` 포함 |
-| 14 | `ctor.fail`: `@MyComponent Exploding()` — 생성자가 `new IllegalStateException("boom")`을 던진다 | 컨테이너 생성 | `BeanCreationException`, `getCause()`가 `IllegalStateException`이고 메시지 `"boom"`, 예외 메시지에 `Exploding` 포함 |
+| 14 | `ctor.fail`: `@MyComponent Exploding()`: 생성자가 `new IllegalStateException("boom")`을 던진다 | 컨테이너 생성 | `BeanCreationException`, `getCause()`가 `IllegalStateException`이고 메시지 `"boom"`, 예외 메시지에 `Exploding` 포함 |
 | 15 | `ctor.unknown`: `@MyComponent NeedsString(String)` | 컨테이너 생성 | `NoSuchBeanException`, 메시지에 `String`과 `NeedsString` 포함 |
 | 16 | `abstracttype`: `@MyComponent`가 붙은 추상 클래스 `BaseRepo` | 컨테이너 생성 | `BeanCreationException`, 메시지에 `BaseRepo` 포함 |
 | 17 | 없음 | `new MiniContainer("lab.bank.minidi.fixture.doesnotexist")` | 예외 없음, `beanCount() == 0`, 이후 `getBean(Object.class)`는 `NoSuchBeanException` |
@@ -86,10 +86,10 @@ public final class MiniContainer {
 시나리오 8~12의 "정확히"는 `hasMessage(...)`로 문자열 전체를 비교한다는 뜻이다. `contains`로 쓰지 않는다.
 
 ## 제약
-- `org.springframework.*`, Reflections·ClassGraph 같은 스캔 라이브러리 금지 — 클래스패스 스캔과 리플렉션 호출을 직접 작성하는 것이 이 미션의 목표다.
-- 필드 주입·setter 주입은 구현하지 않는다 — README 1절의 생성자 주입 이유를 따른다.
+- `org.springframework.*`, Reflections, ClassGraph 같은 스캔 라이브러리 금지: 클래스패스 스캔과 리플렉션 호출을 직접 작성하는 것이 이 미션의 목표다.
+- 필드 주입, setter 주입은 구현하지 않는다: README 1절의 생성자 주입 이유를 따른다.
 - 테스트 하나가 다른 시나리오의 fixture를 읽지 않도록 시나리오마다 하위 패키지를 나눈다. 같은 패키지를 스캔하면 7번의 `EmailNotifier`가 5번 테스트를 깨뜨린다.
-- 순환 감지에 "재귀 깊이 N 초과" 같은 휴리스틱을 쓰지 않는다 — 깊이 제한은 경로를 알려주지 못한다.
+- 순환 감지에 "재귀 깊이 N 초과" 같은 휴리스틱을 쓰지 않는다: 깊이 제한은 경로를 알려주지 못한다.
 
 ## 힌트
 <details>
@@ -112,6 +112,6 @@ public final class MiniContainer {
 
 ## 생각해볼 질문
 1. Spring은 setter 주입끼리의 순환 참조를 3단계 캐시(`singletonObjects`, `earlySingletonObjects`, `singletonFactories`)로 해결할 수 있는데 생성자 주입 순환은 해결하지 못한다. 왜 생성자 주입에서는 원리상 불가능한가? Spring Boot 2.6부터 `spring.main.allow-circular-references` 기본값이 `false`인 이유와 연결해 답하라.
-2. 이 컨테이너는 모든 빈을 컨테이너 생성 시점에 만든다(eager). 요청할 때 만드는 방식(lazy)과 비교해, 시나리오 6·7 같은 설정 오류가 언제 드러나는지 차이를 적어라. 이체 서버라면 어느 쪽이 사고를 줄이는가?
+2. 이 컨테이너는 모든 빈을 컨테이너 생성 시점에 만든다(eager). 요청할 때 만드는 방식(lazy)과 비교해, 시나리오 6, 7 같은 설정 오류가 언제 드러나는지 차이를 적어라. 이체 서버라면 어느 쪽이 사고를 줄이는가?
 3. 시나리오 7에서 `SmsNotifier`를 기본값으로 쓰고 싶다면 컨테이너에 무엇을 추가해야 하나? Spring의 `@Primary`와 `@Qualifier`는 각각 어떤 규칙을 타입 해석 규칙에 끼워 넣는가?
 4. (다음 미션 연결) 이 컨테이너가 `getBean(TransferEngine.class)`로 진짜 구현체 대신 "호출 시간을 재는 객체"를 돌려주게 하려면 생성 단계 어디에 코드를 끼워야 하나? M3-4에서 만들 프록시와 Spring의 `BeanPostProcessor`가 그 자리다.

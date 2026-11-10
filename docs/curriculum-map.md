@@ -19,8 +19,8 @@
 
 | 수준 | 적용 | 문서가 제공하는 것 | 내가 직접 해야 하는 것 |
 |---|---|---|---|
-| **L1** | Phase 0~1 | 클래스·메서드 시그니처, 기대값이 채워진 테스트 시나리오 표, 힌트 2~3개 | 테스트 코드 작성, 구현 |
-| **L2** | Phase 2~5 | 요구사항, 기대값이 채워진 테스트 시나리오 표, 핵심 인터페이스 시그니처만, 힌트 1~2개 | 클래스 설계(필드·메서드 결정), 테스트, 구현, 측정표 |
+| **L1** | Phase 0~1 | 클래스, 메서드 시그니처, 기대값이 채워진 테스트 시나리오 표, 힌트 2~3개 | 테스트 코드 작성, 구현 |
+| **L2** | Phase 2~5 | 요구사항, 기대값이 채워진 테스트 시나리오 표, 핵심 인터페이스 시그니처만, 힌트 1~2개 | 클래스 설계(필드, 메서드 결정), 테스트, 구현, 측정표 |
 | **L3** | Phase 6~8 | 요구사항, 완료 기준(반드시 지켜야 할 불변식), 힌트 0~1개 | 테스트 시나리오 표 직접 작성(PR 본문에 첨부), 설계 문서, 구현 |
 
 L3 미션의 테스트 시나리오 표는 PR을 올리기 전에 리뷰를 먼저 받는다. 시나리오가 빠지면 구현 리뷰로 넘어가지 않는다.
@@ -35,7 +35,7 @@ L3 미션의 테스트 시나리오 표는 PR을 올리기 전에 리뷰를 먼�
 | 1 | 빈 디렉터리에서 직접 생성 | `lab.bank` | 순수 Java, `main` 콘솔 앱 |
 | 2 | Phase 1 `src/` 복사 | `lab.bank` | 순수 Java |
 | 3 | Spring Initializr로 생성 후 Phase 2 도메인 코드 복사 | `lab.bank` | Spring Boot (웹 없음) |
-| 4 | Phase 3 workspace 복사 + Spring MVC·Spring Security 스타터 추가 | `lab.bank` | Spring Boot 웹, 저장소는 메모리 |
+| 4 | Phase 3 workspace 복사 + Spring MVC, Spring Security 스타터 추가 | `lab.bank` | Spring Boot 웹, 저장소는 메모리 |
 | 5 | Phase 4 workspace 복사 + MySQL 8.4, JPA, Flyway 추가 | `lab.bank` | Spring Boot 웹 + MySQL |
 | 6 | Spring Initializr로 새로 생성 (Phase 5 코드는 참고만) | `lab.corebank` | Spring Boot + MySQL + Redis |
 | 7 | Spring Initializr로 새로 생성 | `lab.trading` | Spring Boot + MySQL |
@@ -49,17 +49,17 @@ Phase 5까지 같은 이름으로 쓴다. Phase 2의 `TransferEngine`, `Transfer
 
 ## 3. 미션 목록
 
-표의 "선행"은 반드시 먼저 끝내야 하는 미션이다. "만드는 것"은 미션이 끝났을 때 workspace에 있어야 하는 코드·문서다.
+표의 "선행"은 반드시 먼저 끝내야 하는 미션이다. "만드는 것"은 미션이 끝났을 때 workspace에 있어야 하는 코드, 문서다.
 
-### Phase 0 — 개발 환경 (0.5주, L1)
+### Phase 0: 개발 환경 (0.5주, L1)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
 | M0-1 | 개발 환경 세팅 | - | JDK 21, IntelliJ, Git, Docker 설치 확인 기록 |
 | M0-2 | 첫 Gradle 프로젝트 & 첫 테스트 | M0-1 | `Greeter`, `GreeterTest`, Gradle Wrapper |
-| M0-3 | GitHub Actions CI | M0-2 | `.github/workflows/ci.yml` (push·PR마다 `./gradlew test`) |
+| M0-3 | GitHub Actions CI | M0-2 | `.github/workflows/ci.yml` (push, PR마다 `./gradlew test`) |
 
-### Phase 1 — Java 기본기 + TDD (3주, L1)
+### Phase 1: Java 기본기 + TDD (3주, L1)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
@@ -69,7 +69,7 @@ Phase 5까지 같은 이름으로 쓴다. Phase 2의 `TransferEngine`, `Transfer
 | M1-4 | 이자 계산기와 반올림 정책 | M1-1 | `InterestPolicy` 구현체 3개, `TaxCalculator` |
 | M1-5 | [종합] 콘솔 뱅킹 | M1-3, M1-4 | `console` 패키지, JaCoCo 리포트 |
 
-### Phase 2 — Java 동시성 (3주, L2)
+### Phase 2: Java 동시성 (3주, L2)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
@@ -81,71 +81,71 @@ Phase 5까지 같은 이름으로 쓴다. Phase 2의 `TransferEngine`, `Transfer
 | M2-6 | `ExecutorService`와 가상 스레드 | M2-4 | 풀 종류별 측정표 |
 | M2-7 | [종합] 스레드 안전한 이체 엔진 | M2-4, M2-5, M2-6 | `TransferEngine`, `DESIGN.md` |
 
-### Phase 3 — Spring Core (2주, L2)
+### Phase 3: Spring Core (2주, L2)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
 | M3-1 | 나만의 DI 컨테이너 | M2-7 | `@MyComponent`, `MiniContainer` (생성자 주입, 순환 참조 감지) |
 | M3-2 | Spring Boot로 이식 | M3-1 | Spring Boot 프로젝트, `TransferEngine` 빈 |
-| M3-3 | 빈 스코프·라이프사이클과 싱글톤 상태 문제 | M3-2 | 상태를 가진 싱글톤 빈의 동시성 버그 재현 테스트 |
+| M3-3 | 빈 스코프, 라이프사이클과 싱글톤 상태 문제 | M3-2 | 상태를 가진 싱글톤 빈의 동시성 버그 재현 테스트 |
 | M3-4 | 프록시 직접 만들기 | M3-2 | 실행 시간 측정 프록시 3종 (데코레이터, JDK 동적 프록시, CGLIB) |
 | M3-5 | 감사 로그 AOP | M3-4 | `@Audited`, `AuditAspect`, self-invocation 재현 테스트 |
 | M3-6 | 설정 외부화와 프로파일 | M3-2 | `TransferProperties` (`@ConfigurationProperties` + 검증), `local`/`test` 프로파일 |
 
-### Phase 4 — Spring Web, API 설계, 보안 (3주, L2)
+### Phase 4: Spring Web, API 설계, 보안 (3주, L2)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
-| M4-1 | HTTP와 첫 컨트롤러 | M3-6 | `HealthController`, curl로 관찰한 요청·응답 기록 |
+| M4-1 | HTTP와 첫 컨트롤러 | M3-6 | `HealthController`, curl로 관찰한 요청, 응답 기록 |
 | M4-2 | 계좌 API와 입력 검증 | M4-1 | `AccountController`, 요청/응답 DTO(`record`), Bean Validation |
 | M4-3 | 에러 응답 표준화 | M4-2 | `@RestControllerAdvice`, `ErrorCode` → HTTP 상태 + `ProblemDetail` |
 | M4-4 | 이체 API와 `Idempotency-Key` | M4-3 | `TransferController`, 멱등 처리 |
 | M4-5 | 거래내역 조회와 커서 페이지네이션 | M4-3 | `GET /accounts/{number}/transactions` |
-| M4-6 | 금액·날짜 직렬화 | M4-2 | Jackson 3 커스텀 직렬화 (금액 → 문자열) |
-| M4-7 | Spring Security 인증·인가 | M4-4 | `SecurityFilterChain`, 계좌 소유자 검증 |
+| M4-6 | 금액, 날짜 직렬화 | M4-2 | Jackson 3 커스텀 직렬화 (금액 → 문자열) |
+| M4-7 | Spring Security 인증, 인가 | M4-4 | `SecurityFilterChain`, 계좌 소유자 검증 |
 | M4-8 | API 테스트와 요청 추적 로그 | M4-7 | `@WebMvcTest` 테스트, MDC 요청 ID 필터 |
 
-### Phase 5 — SQL, JDBC, JPA, 트랜잭션, DB 락 (4주, L2)
+### Phase 5: SQL, JDBC, JPA, 트랜잭션, DB 락 (4주, L2)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
-| M5-1 | SQL 기초 | M4-8 | Docker MySQL 8.4, `sql/` 폴더의 DDL·DML·JOIN·집계 쿼리 |
+| M5-1 | SQL 기초 | M4-8 | Docker MySQL 8.4, `sql/` 폴더의 DDL, DML, JOIN, 집계 쿼리 |
 | M5-2 | JDBC 맨손 구현 | M5-1 | `JdbcAccountRepository` (`Connection`, `PreparedStatement`, 수동 트랜잭션) |
 | M5-3 | JdbcTemplate, Flyway, Testcontainers | M5-2 | Flyway 마이그레이션 `V1__...sql`, Testcontainers 통합 테스트 |
 | M5-4 | JPA 전환과 영속성 컨텍스트 | M5-3 | JPA 엔티티, Spring Data 리포지토리 |
 | M5-5 | N+1 문제 | M5-4 | fetch join / `@EntityGraph` / batch size 비교표 |
-| M5-6 | 트랜잭션 함정 | M5-4 | 전파·롤백 규칙·self-invocation 재현 테스트 |
+| M5-6 | 트랜잭션 함정 | M5-4 | 전파, 롤백 규칙, self-invocation 재현 테스트 |
 | M5-7 | 격리 수준 실험실 | M5-3 | 두 커넥션 교차 실행 기록표 |
 | M5-8 | DB 동시성 제어 3종 비교 | M5-6 | 비관적 락 / 낙관적 락 / 조건부 UPDATE 비교표 |
-| M5-9 | DB 데드락과 인덱스·실행계획 | M5-8 | `SHOW ENGINE INNODB STATUS` 분석, `EXPLAIN` 기록 |
+| M5-9 | DB 데드락과 인덱스, 실행계획 | M5-8 | `SHOW ENGINE INNODB STATUS` 분석, `EXPLAIN` 기록 |
 
-### Phase 6 — 코어뱅킹 프로젝트 (4주, L3)
+### Phase 6: 코어뱅킹 프로젝트 (4주, L3)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
-| M6-1 | 요구사항·ERD·상태 머신 설계 | M5-9 | `docs/requirements.md`, ERD, 계좌 상태 머신 |
+| M6-1 | 요구사항, ERD, 상태 머신 설계 | M5-9 | `docs/requirements.md`, ERD, 계좌 상태 머신 |
 | M6-2 | 복식부기 분개 엔진 | M6-1 | `JournalEntry`, `JournalLine`, 계정과목 |
-| M6-3 | 입출금·당행이체와 멱등성 | M6-2 | 이체 API, `idempotency_key` 유니크 제약 |
+| M6-3 | 입출금, 당행이체와 멱등성 | M6-2 | 이체 API, `idempotency_key` 유니크 제약 |
 | M6-4 | 이체 한도, 비밀번호 오류 정지, 동시성 검증 | M6-3 | 한도 테이블, 동시성 통합 테스트 |
-| M6-5 | 이자 배치 (Spring Batch) | M6-3 | 일 이자 계산·지급 Job |
+| M6-5 | 이자 배치 (Spring Batch) | M6-3 | 일 이자 계산, 지급 Job |
 | M6-6 | 일 마감과 대사 | M6-5 | 잔액 스냅샷, 원장-잔액 대사 Job, 불일치 리포트 |
-| M6-7 | 타행이체 시뮬레이션 | M6-3, M6-4 | 가짜 대외기관 서버, 타임아웃·결과 미확정·보상 처리 |
+| M6-7 | 타행이체 시뮬레이션 | M6-3, M6-4 | 가짜 대외기관 서버, 타임아웃, 결과 미확정, 보상 처리 |
 | M6-8 | 다중 인스턴스와 Redis 분산락 | M6-4 | 인스턴스 2대 실행 시나리오, Redisson 락 vs DB 락 비교 |
 
-### Phase 7 — 증권 매매 프로젝트 (4주, L3)
+### Phase 7: 증권 매매 프로젝트 (4주, L3)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|
 | M7-1 | 주문 도메인과 호가 단위 | M6-8 | `Order`, 주문 상태 머신, `TickSizePolicy` |
-| M7-2 | 예수금·수량 홀드 | M7-1 | 주문가능금액·매도가능수량 차감, 동시 주문 테스트 |
+| M7-2 | 예수금, 수량 홀드 | M7-1 | 주문가능금액, 매도가능수량 차감, 동시 주문 테스트 |
 | M7-3 | 호가창과 매칭 엔진 | M7-1 | `OrderBook`, `MatchingEngine` (순수 Java) |
 | M7-4 | 단일 스레드 이벤트 루프 | M7-3 | 종목별 명령 큐 + 전용 스레드 |
-| M7-5 | 정정·취소 | M7-4 | 정정/취소 명령, 체결과의 경합 테스트 |
-| M7-6 | 체결 반영, 평균단가, 수수료·세금, T+2 결제 | M7-2, M7-5 | 체결 이벤트 처리기, 결제 예정 내역 |
+| M7-5 | 정정, 취소 | M7-4 | 정정/취소 명령, 체결과의 경합 테스트 |
+| M7-6 | 체결 반영, 평균단가, 수수료, 세금, T+2 결제 | M7-2, M7-5 | 체결 이벤트 처리기, 결제 예정 내역 |
 | M7-7 | 실시간 시세 WebSocket | M7-4 | STOMP 호가/체결 브로드캐스트 |
 | M7-8 | 이벤트 소싱 복구 | M7-5 | 명령 로그 재생으로 호가창 복구 테스트 |
 
-### Phase 8 — 분산 환경과 운영 (4주, L3)
+### Phase 8: 분산 환경과 운영 (4주, L3)
 
 | 미션 | 주제 | 선행 | 만드는 것 |
 |---|---|---|---|

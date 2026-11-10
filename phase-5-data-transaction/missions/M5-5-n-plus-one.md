@@ -1,11 +1,11 @@
 # M5-5 N+1 문제
 
-> 가이드 수준: L2 · 예상 시간: 4~5h · 선행: M5-4
+> 가이드 수준: L2, 예상 시간: 4~5h, 선행: M5-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - "계좌 목록 + 계좌별 거래 건수" 조회에서 N+1을 재현하고, 실행 SQL 수(계좌 11개 → 12개)를 테스트로 고정한다.
-- 같은 조회를 fetch join, `@EntityGraph`, `hibernate.default_batch_fetch_size` 세 방식으로 바꾸고 SQL 수·반환 행 수·소요 시간을 비교표로 기록한다.
+- 같은 조회를 fetch join, `@EntityGraph`, `hibernate.default_batch_fetch_size` 세 방식으로 바꾸고 SQL 수, 반환 행 수, 소요 시간을 비교표로 기록한다.
 - `@ManyToOne` 방향 N+1에서 SQL 수가 "1 + 거래 수"가 아니라 "1 + 서로 다른 계좌 수"인 이유를 영속성 컨텍스트로 설명하고 테스트로 보여준다.
 - 컬렉션 fetch join과 페이지네이션을 함께 쓸 때 사용하는 Hibernate 버전에서 실제로 나가는 SQL과 경고를 기록하고, 배치 페치로 바꾼 페이지 조회의 SQL 수를 테스트로 고정한다.
 
@@ -14,14 +14,14 @@
 M5-4에서 만든 `Statistics` 측정 방법으로 SQL 수를 테스트에 고정하면, 누군가 연관 매핑이나 조회 메서드를 바꿔 N+1이 다시 생길 때 테스트가 실패한다.
 
 ## 요구사항
-1. **조회 결과 DTO.** `lab.bank.application.AccountSummary` — `record AccountSummary(String number, String ownerName, int transactionCount)`. 반환 목록은 `number` 오름차순이다.
+1. **조회 결과 DTO.** `lab.bank.application.AccountSummary`: `record AccountSummary(String number, String ownerName, int transactionCount)`. 반환 목록은 `number` 오름차순이다.
 2. **`lab.bank.application.AccountQueryService`.** 아래 4개 메서드를 만든다. 모두 `@Transactional(readOnly = true)`이고 반환 타입은 `List<AccountSummary>`다.
-   - `summariesNaive()` — `findAll()` 후 각 계좌의 `transactions` 컬렉션 크기를 읽는다
-   - `summariesFetchJoin()` — JPQL `left join fetch`로 계좌와 거래내역을 한 번에 읽는다
-   - `summariesEntityGraph()` — Spring Data 리포지토리 메서드에 `@EntityGraph(attributePaths = "transactions")`
-   - `summariesBatch()` — `summariesNaive()`와 같은 코드. 배치 페치 설정(`spring.jpa.properties.hibernate.default_batch_fetch_size`)을 켠 테스트 클래스에서만 측정한다
-3. **거래내역 → 계좌 방향 조회.** `List<String> ownerNamesOfAllTransactions()` — 모든 거래내역을 읽고 각 거래의 `getAccount()`에서 예금주 이름을 꺼낸다. 단순 버전과 fetch join 버전 두 개를 만든다.
-4. **페이지 조회.** `Page<AccountSummary> summaryPage(int page, int size)` — `number` 오름차순.
+   - `summariesNaive()`: `findAll()` 후 각 계좌의 `transactions` 컬렉션 크기를 읽는다
+   - `summariesFetchJoin()`: JPQL `left join fetch`로 계좌와 거래내역을 한 번에 읽는다
+   - `summariesEntityGraph()`: Spring Data 리포지토리 메서드에 `@EntityGraph(attributePaths = "transactions")`
+   - `summariesBatch()`: `summariesNaive()`와 같은 코드. 배치 페치 설정(`spring.jpa.properties.hibernate.default_batch_fetch_size`)을 켠 테스트 클래스에서만 측정한다
+3. **거래내역 → 계좌 방향 조회.** `List<String> ownerNamesOfAllTransactions()`: 모든 거래내역을 읽고 각 거래의 `getAccount()`에서 예금주 이름을 꺼낸다. 단순 버전과 fetch join 버전 두 개를 만든다.
+4. **페이지 조회.** `Page<AccountSummary> summaryPage(int page, int size)`: `number` 오름차순.
    - 1단계: 리포지토리 메서드에 `@EntityGraph(attributePaths = "transactions")`와 `Pageable`을 함께 써서 구현하고 SQL과 로그를 관찰한다 (시나리오 9~10).
    - 2단계: 계좌만 페이지 조회(SQL에 `LIMIT`)하고, 거래 건수는 배치 페치로 읽도록 바꾼다 (시나리오 11~12).
 5. **테스트 데이터.** 기본 데이터: 계좌 11개(`110-0000-0001` ~ `110-0000-0011`, 예금주 `고객01` ~ `고객11`). 0001~0010은 거래내역 3건씩(총 30건), 0011은 0건. 측정용 데이터: 계좌 1,000개, 계좌마다 거래내역 10건(총 10,000건). 데이터는 `JdbcTemplate.batchUpdate` 등으로 별도 트랜잭션에서 넣고 커밋한 뒤, `statistics.clear()` 후 측정한다.
@@ -33,7 +33,7 @@ M5-4에서 만든 `Statistics` 측정 방법으로 SQL 수를 테스트에 고�
 |---|---|---|---|
 | 1 | 배치 설정 없음 | `summariesNaive()` | SQL 수 12 (계좌 1 + 컬렉션 11), `getCollectionFetchCount()` 11, 결과 11행, 0001의 건수 3, 0011의 건수 0 |
 | 2 | 배치 설정 없음 | `summariesFetchJoin()` | SQL 수 1, 결과 11행 (중복 계좌 없음), 0011의 건수 0 |
-| 3 | 배치 설정 없음 | 2번 쿼리의 `left join fetch`를 `join fetch`로 바꿔 실행 | SQL 수 1, 결과 10행 (거래 없는 0011이 빠짐) — 확인 후 `left`로 되돌린다 |
+| 3 | 배치 설정 없음 | 2번 쿼리의 `left join fetch`를 `join fetch`로 바꿔 실행 | SQL 수 1, 결과 10행 (거래 없는 0011이 빠짐): 확인 후 `left`로 되돌린다 |
 | 4 | 배치 설정 없음 | `summariesEntityGraph()` | SQL 수 1, 결과 11행 |
 | 5 | 배치 크기 100 | `summariesBatch()` | SQL 수 2 (계좌 1 + `IN` 절 컬렉션 조회 1), 결과 11행 |
 | 6 | 배치 크기 5 | `summariesBatch()` | SQL 수 4 (계좌 1 + 컬렉션 3번: 11 ÷ 5 올림 = 3), 결과 11행 |

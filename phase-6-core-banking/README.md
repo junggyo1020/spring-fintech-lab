@@ -1,6 +1,6 @@
-# Phase 6 — 코어뱅킹 프로젝트 (4주)
+# Phase 6: 코어뱅킹 프로젝트 (4주)
 
-> 가이드 수준: L3 · 선행: Phase 5 완료 · 이 Phase의 workspace 시작 방법: Spring Initializr로 새로 생성 (Phase 5 코드는 참고만)
+> 가이드 수준: L3, 선행: Phase 5 완료, 이 Phase의 workspace 시작 방법: Spring Initializr로 새로 생성 (Phase 5 코드는 참고만)
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
@@ -17,7 +17,7 @@
 | INV-1 | 모든 분개에서 Σ차변 금액 == Σ대변 금액 | M6-2 |
 | INV-2 | Σ(고객 계좌의 `balance`) == 원장의 `고객예금` 계정 잔액 (Σ대변 − Σ차변) | M6-3 |
 | INV-3 | 같은 고객이 같은 `Idempotency-Key`로 보낸 요청은 몇 번 와도 분개를 최대 1개만 만든다 | M6-3 |
-| INV-4 | `타행이체미정산` 계정 잔액 == 상태가 `REQUESTED`·`SENT`·`UNKNOWN`인 타행이체 금액의 합계 (타임아웃이 나도 돈은 이 계정에 남아 있고 사라지지 않는다) | M6-7 |
+| INV-4 | `타행이체미정산` 계정 잔액 == 상태가 `REQUESTED`, `SENT`, `UNKNOWN`인 타행이체 금액의 합계 (타임아웃이 나도 돈은 이 계정에 남아 있고 사라지지 않는다) | M6-7 |
 
 ## 이 Phase의 결과물
 
@@ -32,11 +32,11 @@ phase-6-core-banking/workspace/
 │       ├── product/
 │       ├── account/                ← Account, AccountStatus, 상태 이력
 │       ├── ledger/                 ← LedgerAccount, JournalEntry, JournalLine (M6-2)
-│       ├── transfer/               ← 입출금·당행이체 API (M6-3)
+│       ├── transfer/               ← 입출금, 당행이체 API (M6-3)
 │       ├── idempotency/            ← 멱등 레코드 (M6-3)
 │       ├── limit/                  ← 이체 한도, 비밀번호 오류 횟수 (M6-4)
 │       ├── interest/               ← 이자 배치 Job (M6-5)
-│       ├── closing/                ← 일 마감·대사 Job (M6-6)
+│       ├── closing/                ← 일 마감, 대사 Job (M6-6)
 │       ├── interbank/              ← 타행이체, 대외기관 클라이언트 (M6-7)
 │       └── lock/                   ← 락 전략 (M6-8)
 ├── fake-kftc/                      ← 가짜 대외기관 서버, 별도 Spring Boot 앱 (M6-7)
@@ -56,21 +56,21 @@ phase-6-core-banking/workspace/
 ## 핵심 개념 정리 (미션 전에 읽기)
 
 ### 1. 계정계 개요
-은행 시스템에서 **계정계**는 계좌 잔액, 입출금, 이체, 이자, 원장을 처리하는 영역이다. 고객 화면·상품 안내·마케팅을 처리하는 영역(채널계, 정보계)과 구분한다.
+은행 시스템에서 **계정계**는 계좌 잔액, 입출금, 이체, 이자, 원장을 처리하는 영역이다. 고객 화면, 상품 안내, 마케팅을 처리하는 영역(채널계, 정보계)과 구분한다.
 계정계의 버그는 "화면이 이상하다"가 아니라 "돈이 생기거나 사라졌다"로 끝난다. 그래서 계정계는 다음 3가지를 설계 단계에서 정한다.
 
 | 질문 | Phase 6에서 정하는 곳 |
 |---|---|
 | 잔액이 맞다는 것을 무엇으로 증명하는가 | 복식부기 분개(M6-2)와 대사 배치(M6-6) |
 | 같은 요청이 두 번 오면 무엇이 일어나는가 | 멱등 레코드(M6-3) |
-| 결과를 모르는 대외 호출은 어떻게 끝내는가 | `UNKNOWN` 상태와 조회·보상(M6-7) |
+| 결과를 모르는 대외 호출은 어떻게 끝내는가 | `UNKNOWN` 상태와 조회, 보상(M6-7) |
 
 Phase 6에서는 고객 인증을 다루지 않는다(Phase 4 M4-7에서 다뤘다). 이 Phase의 규칙: 요청자는 HTTP 헤더 `X-Customer-Id`(양의 정수)로 식별하고, 헤더가 없으면 400을 돌려준다.
-업무일자는 이 Phase의 규칙으로 **Asia/Seoul 달력 날짜와 같다**(주말·공휴일 구분 없음). 현재 시각은 항상 주입받은 `java.time.Clock`에서 읽는다.
+업무일자는 이 Phase의 규칙으로 **Asia/Seoul 달력 날짜와 같다**(주말, 공휴일 구분 없음). 현재 시각은 항상 주입받은 `java.time.Clock`에서 읽는다.
 
 ### 2. 복식부기
 은행 입장에서 고객 예금은 **부채**(고객에게 돌려줘야 할 돈), 보유 현금은 **자산**이다.
-자산 증가·부채 감소·비용 발생은 **차변**, 자산 감소·부채 증가·수익 발생은 **대변**에 적는다. 모든 분개는 차변 합계 = 대변 합계다.
+자산 증가, 부채 감소, 비용 발생은 **차변**, 자산 감소, 부채 증가, 수익 발생은 **대변**에 적는다. 모든 분개는 차변 합계 = 대변 합계다.
 
 | 거래 | 차변 | 대변 |
 |---|---|---|
@@ -82,7 +82,7 @@ Phase 6에서는 고객 인증을 다루지 않는다(Phase 4 M4-7에서 다뤘�
 
 (출처: 이 레포 `fintech-domain-facts` 6절, 확인일 2026-11-10. 계정과목 이름은 이 레포에서 정한 이름이고, 실제 은행 계정과목 체계는 은행마다 다르다.)
 
-계정 잔액은 정상 잔액 방향으로 계산한다. 자산·비용 계정은 Σ차변 − Σ대변, 부채·자본·수익 계정은 Σ대변 − Σ차변이다.
+계정 잔액은 정상 잔액 방향으로 계산한다. 자산, 비용 계정은 Σ차변 − Σ대변, 부채, 자본, 수익 계정은 Σ대변 − Σ차변이다.
 위 표의 5행을 모두 기록하면 고객예금 A의 잔액은 10,000 − 3,000 + 100 + 8,460 − 5,000 = 10,560원이다.
 잘못 기록한 분개는 고치거나 지우지 않는다. 차변과 대변을 뒤집은 **반대 분개**를 새로 기록해 효과를 없앤다. 그래야 "언제 무엇이 잘못 기록됐고 언제 바로잡았는가"가 원장에 남는다.
 
@@ -116,7 +116,7 @@ Phase 4 M4-4는 이 판단을 메모리에서 했다. 메모리 저장은 서버
 | 청크(chunk) | 읽기 → 처리 → 쓰기를 N건 단위로 묶어 한 트랜잭션으로 커밋하는 단위 |
 
 1,000개 계좌를 청크 크기 100으로 처리하다 250번째에서 실패하면 200건은 커밋되어 있다. 재시작은 201번째부터 해야 하고, 앞의 200건을 다시 처리하면 이자가 두 번 지급된다.
-Spring Batch는 마지막으로 커밋한 위치를 `JobRepository`(DB 테이블)에 저장해 재시작 위치를 정한다. 그래도 "같은 계좌·같은 날짜에 이자가 두 번 들어가지 않는다"는 DB 유니크 제약으로 한 번 더 막는다.
+Spring Batch는 마지막으로 커밋한 위치를 `JobRepository`(DB 테이블)에 저장해 재시작 위치를 정한다. 그래도 "같은 계좌, 같은 날짜에 이자가 두 번 들어가지 않는다"는 DB 유니크 제약으로 한 번 더 막는다.
 Spring Boot 4.1.x가 관리하는 Spring Batch는 6.0.x다(2026-11-10 확인, Boot 4.1.2 → Batch 6.0.6). Spring Batch 6의 `DefaultBatchConfiguration`은 기본으로 DB를 쓰지 않는 `ResourcelessJobRepository`를 구성한다. 이 저장소는 재시작 정보를 DB에 남기지 않으므로, Phase 6은 `spring-boot-starter-batch-jdbc`로 JDBC `JobRepository`를 쓴다.
 
 ### 6. 대사
@@ -200,10 +200,10 @@ dependencies {
 - Testcontainers 2.x는 모듈 이름에 `testcontainers-` 접두사가 붙고(`org.testcontainers:testcontainers-mysql`), `MySQLContainer` 클래스는 `org.testcontainers.mysql` 패키지에 있다. 1.x 기준 블로그 코드의 `org.testcontainers.containers.MySQLContainer`를 그대로 쓰지 않는다.
 - Resilience4j는 2.4.0부터 Spring Boot 4용 모듈 `resilience4j-spring-boot4`를 제공한다. `resilience4j-spring-boot3`를 쓰지 않는다.
 - Redisson 4.8.0 스타터는 Spring Boot 4.1용 `redisson-spring-data-41` 모듈을 끌어온다.
-- Redis 의존성(M6-8)과 Resilience4j 의존성(M6-7)은 해당 미션을 시작할 때 추가해도 된다. Redisson 스타터를 넣으면 애플리케이션 시작 시 Redis 연결을 시도하므로, M6-8 전에 넣었다면 `compose.yaml`의 Redis도 띄워 둔다. 같은 이유로 Redisson 스타터를 넣은 뒤의 `@SpringBootTest`는 Redis가 필요하다. CI에도 Redis가 없으므로 테스트에서는 Testcontainers `GenericContainer("redis:8")`(포트 6379)에 `@ServiceConnection(name = "redis")`를 붙여 띄운다. Redisson 4.8.0 스타터가 이 연결 정보와 `spring.data.redis.host`·`port`를 읽는 것, 기본 `lockWatchdogTimeout`이 30,000ms인 것을 Boot 4.1.2에서 확인했다(2026-11-10).
+- Redis 의존성(M6-8)과 Resilience4j 의존성(M6-7)은 해당 미션을 시작할 때 추가해도 된다. Redisson 스타터를 넣으면 애플리케이션 시작 시 Redis 연결을 시도하므로, M6-8 전에 넣었다면 `compose.yaml`의 Redis도 띄워 둔다. 같은 이유로 Redisson 스타터를 넣은 뒤의 `@SpringBootTest`는 Redis가 필요하다. CI에도 Redis가 없으므로 테스트에서는 Testcontainers `GenericContainer("redis:8")`(포트 6379)에 `@ServiceConnection(name = "redis")`를 붙여 띄운다. Redisson 4.8.0 스타터가 이 연결 정보와 `spring.data.redis.host`, `port`를 읽는 것, 기본 `lockWatchdogTimeout`이 30,000ms인 것을 Boot 4.1.2에서 확인했다(2026-11-10).
 - M0-3 CI는 `phase-*/workspace` 바로 아래에 `build.gradle.kts`가 있을 때만 `./gradlew test`를 실행한다. Phase 6의 빌드 파일은 `workspace/corebank/`와 `workspace/fake-kftc/`에 있으므로, CI 반복문에 이 두 디렉터리를 추가한다. CI의 `./gradlew test`는 `external` 태그 테스트(가짜 대외기관이 떠 있어야 하는 테스트)를 실행하지 않는다(M6-7 "직접 작성할 테스트 시나리오"의 Gradle 설정).
 
-### 2. 로컬 MySQL·Redis (`compose.yaml`)
+### 2. 로컬 MySQL, Redis (`compose.yaml`)
 
 ```yaml
 services:
@@ -268,9 +268,9 @@ spring:
 
 | 미션 | 주제 | 예상 시간 |
 |---|---|---|
-| [M6-1](missions/M6-1-requirements-erd-state-machine.md) | 요구사항·ERD·상태 머신 설계 | 5~7h |
+| [M6-1](missions/M6-1-requirements-erd-state-machine.md) | 요구사항, ERD, 상태 머신 설계 | 5~7h |
 | [M6-2](missions/M6-2-double-entry-journal.md) | 복식부기 분개 엔진 | 4~6h |
-| [M6-3](missions/M6-3-deposit-transfer-idempotency.md) | 입출금·당행이체와 멱등성 | 6~8h |
+| [M6-3](missions/M6-3-deposit-transfer-idempotency.md) | 입출금, 당행이체와 멱등성 | 6~8h |
 | [M6-4](missions/M6-4-limits-password-concurrency.md) | 이체 한도, 비밀번호 오류 정지, 동시성 검증 | 5~7h |
 | [M6-5](missions/M6-5-interest-batch.md) | 이자 배치 (Spring Batch) | 5~7h |
 | [M6-6](missions/M6-6-daily-closing-reconciliation.md) | 일 마감과 대사 | 4~6h |
@@ -287,7 +287,7 @@ L3 진행 순서 (모든 미션 공통):
 4. PR 본문에 시나리오 표와 완료 기준 체크 결과를 붙인다.
 
 ## 읽을거리
-- Spring Batch Reference 6.0 (<https://docs.spring.io/spring-batch/reference/>): "What's new in Spring Batch 6", "The Domain Language of Batch", "Configuring and Running a Job" 중 "Configuring a JobRepository"·"Running a Job", "Configuring a Step" 중 "Chunk-oriented Processing"·"Configuring a Step for Restart", "ItemReaders and ItemWriters" 중 "Database"
+- Spring Batch Reference 6.0 (<https://docs.spring.io/spring-batch/reference/>): "What's new in Spring Batch 6", "The Domain Language of Batch", "Configuring and Running a Job" 중 "Configuring a JobRepository", "Running a Job", "Configuring a Step" 중 "Chunk-oriented Processing", "Configuring a Step for Restart", "ItemReaders and ItemWriters" 중 "Database"
 - Spring Boot Reference "Spring Batch" 절과 How-to "Batch Applications" (<https://docs.spring.io/spring-boot/how-to/batch.html>)
 - Resilience4j 문서 "CircuitBreaker" (<https://resilience4j.readme.io/docs/circuitbreaker>): 상태 3개(`CLOSED`, `OPEN`, `HALF_OPEN`)와 "Create and configure a CircuitBreaker" 표
 - Spring Framework Reference "Resilience Features" (`@Retryable`, Spring Framework 7.0부터 코어에 포함)

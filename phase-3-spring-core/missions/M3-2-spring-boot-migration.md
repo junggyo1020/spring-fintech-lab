@@ -1,6 +1,6 @@
 # M3-2 Spring Boot로 이식
 
-> 가이드 수준: L2 · 예상 시간: 3~4h · 선행: M3-1
+> 가이드 수준: L2, 예상 시간: 3~4h, 선행: M3-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -18,7 +18,7 @@ README "워크스페이스 만들기" 2단계로 Phase 2 코드를 복사한 상
 ### 1. 빈 등록 대상 정하기
 1. 아래 기준으로 복사한 모든 클래스를 분류해 `docs/M3-2-bean-inventory.md`에 표로 적는다. 열: `클래스 | 빈 여부 | 등록 방법(@Component / @Bean / 해당 없음) | 이유`.
    - 빈으로 등록한다: 애플리케이션 전체에 1개만 있어야 하는 객체 (`TransferEngine` 구현체, `BankService`, 공유 저장소 역할의 `Ledger`, `Clock`, 멱등성 결과 저장소처럼 Phase 2에서 여러 객체가 같은 인스턴스를 공유하던 것)
-   - 빈으로 등록하지 않는다: 요청마다 새로 만드는 값·엔티티 (`Money`, `AccountNumber`, `Account`, `Transaction`, `TransferCommand`, `TransferResult`, 예외)
+   - 빈으로 등록하지 않는다: 요청마다 새로 만드는 값, 엔티티 (`Money`, `AccountNumber`, `Account`, `Transaction`, `TransferCommand`, `TransferResult`, 예외)
 2. 같은 문서 아래에 "조립 코드 비교" 절을 두고, Phase 2에서 조립에 쓰던 `new` 줄 수(이식 전)와 `BankApplication`의 `new` 줄 수(이식 후, 0)를 적는다.
 
 ### 2. 등록 방법
@@ -57,18 +57,18 @@ README "워크스페이스 만들기" 2단계로 Phase 2 코드를 복사한 상
 | 6 | 5번 직후, 같은 시각 | 1원 이체 | M2-7의 한도 초과 예외. `500-0000-0001` 잔액 15,000,000원 그대로 |
 | 7 | `instant()` = `2026-11-10T15:00:00Z` (= 2026-11-11 00:00:00 KST) | 5,000,000원 이체 | 성공. `500-0000-0001` 잔액 10,000,000원, `500-0000-0002` 잔액 10,000,000원 |
 | 8 | Spring 없이 `new`로 엔진 조립, 테스트 소스의 `MutableClock`(직접 작성한 `Clock` 하위 클래스, 시각을 바꾸는 메서드 보유) 사용, 시간대 Asia/Seoul | 5~7번과 같은 3단계 | 5~7번과 같은 결과 |
-| 9 | 8번과 같은 조립, `MutableClock` = 2026-11-10 08:59:59 KST, 같은 날 그 전에 4,000,000원 이체해 둠 | 1,000,000원 이체 | 성공 (누적 정확히 5,000,000원 — 경계값) |
+| 9 | 8번과 같은 조립, `MutableClock` = 2026-11-10 08:59:59 KST, 같은 날 그 전에 4,000,000원 이체해 둠 | 1,000,000원 이체 | 성공 (누적 정확히 5,000,000원: 경계값) |
 | 10 | 9번 직후 | 1원 이체 | 한도 초과 예외 |
 | 11 | 워크스페이스 루트 | `./gradlew bootRun` | 표준 출력에 `110-****-5678 잔액 70000`, `220-****-5678 잔액 30000` 2줄, 종료 코드 0 |
 
 시나리오 5~7 계산: 20,000,000 − 5,000,000 = 15,000,000 → 6번은 그날 누적 5,000,001원이 되어 거절 → 날짜가 바뀌어 누적 0에서 다시 시작, 15,000,000 − 5,000,000 = 10,000,000.
 
 ## 제약
-- 필드 주입(`@Autowired private X x;`) 금지 — README 1절. 테스트 클래스에서 `@Autowired` 필드로 빈을 받는 것은 허용한다.
-- `src/main/java`에서 인자 없는 `LocalDate.now()`, `LocalDateTime.now()`, `Instant.now()`, `System.currentTimeMillis()`를 날짜·한도 계산에 쓰지 않는다 — 시간대가 서버 설정에 따라 달라진다. 실행 시간 측정용 `System.nanoTime()`은 허용한다.
+- 필드 주입(`@Autowired private X x;`) 금지: README 1절. 테스트 클래스에서 `@Autowired` 필드로 빈을 받는 것은 허용한다.
+- `src/main/java`에서 인자 없는 `LocalDate.now()`, `LocalDateTime.now()`, `Instant.now()`, `System.currentTimeMillis()`를 날짜, 한도 계산에 쓰지 않는다: 시간대가 서버 설정에 따라 달라진다. 실행 시간 측정용 `System.nanoTime()`은 허용한다.
 - `@SpringBootTest` 테스트 클래스는 서로 다른 계좌번호 대역을 쓴다 (이 미션은 `500-0000-xxxx`). 같은 설정의 테스트 클래스끼리 컨텍스트와 싱글톤 빈의 상태를 공유하기 때문이다 (README 6절).
 - `@MockBean`은 Spring Boot 4.0에서 삭제됐다. `org.springframework.test.context.bean.override.mockito.MockitoBean`을 쓴다.
-- `spring-boot-starter-web`(또는 `webmvc`)을 추가하지 않는다 — 웹은 Phase 4.
+- `spring-boot-starter-web`(또는 `webmvc`)을 추가하지 않는다: 웹은 Phase 4.
 
 ## 힌트
 <details>

@@ -1,19 +1,19 @@
 # M3-5 감사 로그 AOP
 
-> 가이드 수준: L2 · 예상 시간: 4~6h · 선행: M3-4
+> 가이드 수준: L2, 예상 시간: 4~6h, 선행: M3-4
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- `@Audited`가 붙은 메서드의 호출자·메서드·인자(계좌번호 마스킹)·결과 또는 예외·소요 시간을 `@Aspect` + `@Around`로 기록하고, 이체 코드에는 감사 코드를 한 줄도 넣지 않는다.
+- `@Audited`가 붙은 메서드의 호출자, 메서드, 인자(계좌번호 마스킹), 결과 또는 예외, 소요 시간을 `@Aspect` + `@Around`로 기록하고, 이체 코드에는 감사 코드를 한 줄도 넣지 않는다.
 - `ThreadLocal` 기반 `CallerContext`를 정리하지 않으면 스레드 풀에서 다른 요청의 호출자가 남는 것을 테스트로 재현하고, `runAs`의 `finally`로 막는다.
 - self-invocation으로 감사가 누락되는 것을 "감사 로그 0건" 테스트로 재현하고, 빈 분리와 자기 주입 2가지로 고친 뒤 장단점을 표로 비교한다.
 - 감사 저장이 실패했을 때 이체가 이미 반영돼 있는 것을 테스트로 보여주고, 이 한계가 Phase 5 트랜잭션과 어떻게 연결되는지 설명한다.
 
 ## 배경
-금융회사는 "누가, 언제, 어떤 계좌로, 얼마를 옮기려 했고, 결과가 무엇이었나"를 남겨야 한다. 사고 조사·내부 감사·민원 대응 모두 이 기록에서 시작한다. 이체 메서드마다 로그 코드를 직접 넣으면 신규 메서드에서 1곳만 빠져도 그 거래는 기록 없이 실행되고, 로그에 계좌번호 원문을 남기면 그 자체가 개인정보 유출 사고가 된다. M3-4에서 손으로 만든 CGLIB 프록시를 이번에는 Spring AOP가 `@Aspect` 선언만 보고 자동으로 만든다. 그리고 M3-4 시나리오 12에서 본 self-invocation 문제가 감사 누락이라는 실제 사고로 나타난다. README 4절을 먼저 읽는다.
+금융회사는 "누가, 언제, 어떤 계좌로, 얼마를 옮기려 했고, 결과가 무엇이었나"를 남겨야 한다. 사고 조사, 내부 감사, 민원 대응 모두 이 기록에서 시작한다. 이체 메서드마다 로그 코드를 직접 넣으면 신규 메서드에서 1곳만 빠져도 그 거래는 기록 없이 실행되고, 로그에 계좌번호 원문을 남기면 그 자체가 개인정보 유출 사고가 된다. M3-4에서 손으로 만든 CGLIB 프록시를 이번에는 Spring AOP가 `@Aspect` 선언만 보고 자동으로 만든다. 그리고 M3-4 시나리오 12에서 본 self-invocation 문제가 감사 누락이라는 실제 사고로 나타난다. README 4절을 먼저 읽는다.
 
 ## 요구사항
-패키지: `lab.bank.audit` (감사 기능), `lab.bank.bulk` (self-invocation 재현·수정). 의존성 `spring-boot-starter-aspectj`는 README의 `build.gradle.kts`에 이미 있다.
+패키지: `lab.bank.audit` (감사 기능), `lab.bank.bulk` (self-invocation 재현, 수정). 의존성 `spring-boot-starter-aspectj`는 README의 `build.gradle.kts`에 이미 있다.
 
 ### 제공하는 핵심 시그니처
 ```java
@@ -50,18 +50,18 @@ Spring Security가 없으므로 "현재 호출자"를 `ThreadLocal<String>`에 �
 | `occurredAt` | `Instant` | `Clock` 빈(M3-2)의 `instant()`, 메서드 호출 직전 시각 |
 | `caller` | `String` | `CallerContext.current()` |
 | `action` | `String` | `@Audited.action()` |
-| `method` | `String` | `{target 클래스 simple name}.{메서드 이름}` — 프록시 클래스 이름(`$$SpringCGLIB$$`)이 아니다 |
+| `method` | `String` | `{target 클래스 simple name}.{메서드 이름}`: 프록시 클래스 이름(`$$SpringCGLIB$$`)이 아니다 |
 | `args` | `String` | 각 인자를 `String.valueOf`(null은 `"null"`)로 바꿔 `", "`로 이은 뒤 `[`, `]`로 감싸고 마스킹 |
 | `outcome` | `AuditOutcome` (enum `SUCCESS`, `FAILURE`) | 정상 반환이면 `SUCCESS`, 예외면 `FAILURE` |
 | `result` | `String` | 성공: 반환값을 `String.valueOf` 후 마스킹 / 실패: `null` |
 | `exceptionType` | `String` | 실패: 예외 클래스 simple name / 성공: `null` |
-| `elapsedMillis` | `long` | 호출 직전·직후 `System.nanoTime()` 차이 ÷ 1,000,000 (소수점 버림) |
+| `elapsedMillis` | `long` | 호출 직전, 직후 `System.nanoTime()` 차이 ÷ 1,000,000 (소수점 버림) |
 
 **마스킹 규칙** (이 미션의 규칙): 정규식 `(\d{3})-\d{4}-(\d{4})`에 맞는 부분을 `$1-****-$2`로 바꾼다. `110-1234-5678` → `110-****-5678`. `args`와 `result` 모두에 적용한다.
 
 ### 3. `AuditAspect` (`@Aspect` + `@Component`)
 1. 포인트컷: `@annotation(lab.bank.audit.Audited)`. 어드바이스: `@Around` 1개.
-2. 순서: 시작 시각·`nanoTime` 기록 → `proceed()` → `AuditLog` 생성 → `AuditLogRepository.save` → 결과 반환 또는 예외 재던지기.
+2. 순서: 시작 시각, `nanoTime` 기록 → `proceed()` → `AuditLog` 생성 → `AuditLogRepository.save` → 결과 반환 또는 예외 재던지기.
 3. target 예외는 **같은 인스턴스**로 다시 던진다.
 4. `save`가 예외를 던질 때 (이 미션의 규칙):
    - target이 정상 반환한 경우: `save`의 예외가 호출자에게 전파된다. target이 이미 실행한 이체는 되돌리지 않는다 (트랜잭션이 없으므로 되돌릴 방법이 없다).
@@ -74,8 +74,8 @@ Spring Security가 없으므로 "현재 호출자"를 `ThreadLocal<String>`에 �
 
 ### 5. self-invocation 재현과 수정 (`lab.bank.bulk`, 모두 `@Service`, `TransferEngine`을 생성자로 주입)
 1. `BulkTransferService`: `@Audited(action = "TRANSFER_ONE") public TransferResult transferOne(TransferCommand)` → `transferEngine.transfer` 호출. `public List<TransferResult> transferAll(List<TransferCommand>)` → 각 명령마다 `this.transferOne` 호출. `transferAll`에는 `@Audited`가 없다.
-2. 수정 1 — 빈 분리: `SplitBulkTransferService`(`transferAll`만 가짐)가 별도 빈 `TransferOneExecutor`(`@Audited(action = "TRANSFER_ONE") transferOne`)를 주입받아 호출한다.
-3. 수정 2 — 자기 주입: `SelfInjectedBulkTransferService`가 생성자 파라미터로 `@Lazy SelfInjectedBulkTransferService self`를 받아 `transferAll` 안에서 `self.transferOne`을 호출한다. `@Lazy` 없이 자기 자신을 생성자로 받으면 시작 시 순환 참조로 실패한다 (Spring Boot 4.1.2에서 최하위 원인 `BeanCurrentlyInCreationException` 확인).
+2. 수정 1: 빈 분리: `SplitBulkTransferService`(`transferAll`만 가짐)가 별도 빈 `TransferOneExecutor`(`@Audited(action = "TRANSFER_ONE") transferOne`)를 주입받아 호출한다.
+3. 수정 2: 자기 주입: `SelfInjectedBulkTransferService`가 생성자 파라미터로 `@Lazy SelfInjectedBulkTransferService self`를 받아 `transferAll` 안에서 `self.transferOne`을 호출한다. `@Lazy` 없이 자기 자신을 생성자로 받으면 시작 시 순환 참조로 실패한다 (Spring Boot 4.1.2에서 최하위 원인 `BeanCurrentlyInCreationException` 확인).
 
 ## 테스트 시나리오
 `@SpringBootTest` 테스트는 `@BeforeEach`에서 `auditLogRepository.deleteAll()`과 `CallerContext.clear()`를 호출한다. 계좌는 시나리오별 대역을 쓰고 Phase 2의 계좌 개설 API로 만든다. "impl"은 각자의 `TransferEngine` 구현 클래스 simple name이다.
@@ -89,7 +89,7 @@ Spring Security가 없으므로 "현재 호출자"를 `ThreadLocal<String>`에 �
 | 5 | 없음 | `runAs("alice", () -> runAs("bob", CallerContext::current) + "/" + CallerContext.current())` | 반환값 `"bob/alice"`, 이후 `current()`는 `"UNKNOWN"` |
 | 6 | `Executors.newFixedThreadPool(1)` | 작업 1: `set("alice")` 후 정리 없이 종료 → 작업 2: `current()` 반환 | 작업 2 결과 `"alice"` (누수 재현) |
 | 7 | 6번과 같은 풀 구성(새 풀) | 작업 1: `runAs("alice", ...)` → 작업 2: `current()` 반환 | 작업 2 결과 `"UNKNOWN"` |
-| 8 | `@SpringBootTest`, `710-0000-0001`(1,000,000원), `710-0000-0002`(0원) | `runAs("teller-01", ...)` 안에서 `710-req-1`, 30,000원 이체 | 로그 1건: `caller="teller-01"`, `action="TRANSFER"`, `method="impl.transfer"`, `outcome=SUCCESS`, `exceptionType=null`, `result≠null`, `elapsedMillis ≥ 0`. `args`에 `710-****-0001`과 `710-****-0002` 포함, `710-0000-0001`·`710-0000-0002`는 `args`·`result` 어디에도 없음 |
+| 8 | `@SpringBootTest`, `710-0000-0001`(1,000,000원), `710-0000-0002`(0원) | `runAs("teller-01", ...)` 안에서 `710-req-1`, 30,000원 이체 | 로그 1건: `caller="teller-01"`, `action="TRANSFER"`, `method="impl.transfer"`, `outcome=SUCCESS`, `exceptionType=null`, `result≠null`, `elapsedMillis ≥ 0`. `args`에 `710-****-0001`과 `710-****-0002` 포함, `710-0000-0001`, `710-0000-0002`는 `args`, `result` 어디에도 없음 |
 | 9 | `@SpringBootTest`, `720-0000-0001`(10,000원), `720-0000-0002`(0원) | `runAs("teller-02", ...)` 안에서 10,001원 이체 | 호출자가 M1-2의 `InsufficientBalanceException`을 받음. 로그 1건: `outcome=FAILURE`, `exceptionType="InsufficientBalanceException"`, `result=null`. `720-0000-0001` 잔액 10,000원 |
 | 10 | `@SpringBootTest`, `CallerContext` 비어 있음, `721-0000-0001`(100,000원) → `721-0000-0002` | 10,000원 이체 | 로그 1건, `caller="UNKNOWN"` |
 | 11 | `@SpringBootTest` | `AopUtils.isAopProxy(engine)`, `AopUtils.isCglibProxy(engine)` | 둘 다 `true` |
@@ -105,10 +105,10 @@ Spring Security가 없으므로 "현재 호출자"를 `ThreadLocal<String>`에 �
 시나리오 15는 먼저 "`TRANSFER_ONE` 3건"을 기대하는 테스트로 작성해 실행하고, 실패 메시지(기대 3, 실제 0)를 `docs/M3-5-self-invocation-fixes.md`에 붙인 뒤, 기대값을 0건으로 바꾸고 `@DisplayName`을 `"M3-5 #15 self-invocation은 감사되지 않는다"`로 고친다.
 
 ## 제약
-- `TransferEngine` 구현체·`BulkTransferService` 등 대상 코드에 감사 로직(로그 생성, 저장소 호출, 마스킹)을 넣지 않는다 — 대상 코드에 남는 것은 `@Audited` 한 줄뿐이다.
+- `TransferEngine` 구현체, `BulkTransferService` 등 대상 코드에 감사 로직(로그 생성, 저장소 호출, 마스킹)을 넣지 않는다: 대상 코드에 남는 것은 `@Audited` 한 줄뿐이다.
 - `CallerContext.set`을 쓴 코드는 같은 메서드의 `finally`에서 `clear()`하거나 `runAs`를 쓴다. 테스트 코드도 마찬가지다 (시나리오 6만 예외).
-- 감사 로그를 `System.out`이나 로거로만 남기지 않는다 — 테스트로 검증할 수 없다. 저장소에 저장한다.
-- 시나리오 13·14는 `@MockitoBean`을 쓰므로 다른 시나리오와 **별도 테스트 클래스**에 둔다. 같은 클래스에 두면 모든 시나리오에서 저장이 실패한다.
+- 감사 로그를 `System.out`이나 로거로만 남기지 않는다: 테스트로 검증할 수 없다. 저장소에 저장한다.
+- 시나리오 13, 14는 `@MockitoBean`을 쓰므로 다른 시나리오와 **별도 테스트 클래스**에 둔다. 같은 클래스에 두면 모든 시나리오에서 저장이 실패한다.
 - `AopContext.currentProxy()`(`exposeProxy`)는 이 미션에서 쓰지 않는다. 생각해볼 질문 2에서 비교만 한다.
 
 ## 힌트

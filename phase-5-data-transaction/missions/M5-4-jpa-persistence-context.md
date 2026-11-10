@@ -1,13 +1,13 @@
 # M5-4 JPA 전환과 영속성 컨텍스트
 
-> 가이드 수준: L2 · 예상 시간: 6~8h · 선행: M5-3
+> 가이드 수준: L2, 예상 시간: 6~8h, 선행: M5-3
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
 - Phase 1의 `Account`를 JPA 엔티티로 매핑하고 거래내역 엔티티 `AccountTransaction`을 추가해, `ddl-auto: validate`로 Flyway 스키마와 매핑이 일치함을 애플리케이션 시작으로 보여준다.
 - 1차 캐시, 동일성 보장, 변경 감지, 쓰기 지연, flush 시점을 Hibernate `Statistics` 값(실행된 SQL 개수, UPDATE 횟수)으로 검증하는 테스트 13개(시나리오 1~13)를 작성한다.
 - Hibernate 프록시가 섞여도 `Account.equals`가 맞게 동작함을 테스트로 보여주고, `getClass()` 비교로 바꾸면 실패하는 것을 기록한다.
-- Phase 2 `TransferEngine`을 JPA로 구현한 `JpaTransferEngine`이 이체 한 번에 SQL 7개(SELECT 3, INSERT 2, UPDATE 2)를 실행함을 테스트로 고정하고, Phase 4 API를 이 엔진과 DB 저장소에 연결해 M4-2·M4-4·M4-5 API 테스트를 그대로 통과시킨다.
+- Phase 2 `TransferEngine`을 JPA로 구현한 `JpaTransferEngine`이 이체 한 번에 SQL 7개(SELECT 3, INSERT 2, UPDATE 2)를 실행함을 테스트로 고정하고, Phase 4 API를 이 엔진과 DB 저장소에 연결해 M4-2, M4-4, M4-5 API 테스트를 그대로 통과시킨다.
 
 ## 배경
 M5-3의 `JdbcTemplate` 코드에는 아직 `UPDATE account SET balance = ?` 같은 SQL과 `RowMapper`가 있다. JPA는 "객체의 값을 바꾸면 커밋할 때 UPDATE가 나간다"는 모델로 이것을 없앤다.
@@ -16,7 +16,7 @@ M5-3의 `JdbcTemplate` 코드에는 아직 `UPDATE account SET balance = ?` 같�
 
 ## 요구사항
 1. **의존성과 설정.** README의 M5-4 의존성 줄과 `application.yml`의 `spring.jpa` 부분을 추가한다. `ddl-auto`는 `validate`만 쓴다 (스키마는 Flyway가 만든다).
-2. **`Account` 매핑** (`lab.bank.account.Account`에 직접 JPA 애너테이션을 붙인다 — 이 미션의 규칙).
+2. **`Account` 매핑** (`lab.bank.account.Account`에 직접 JPA 애너테이션을 붙인다: 이 미션의 규칙).
    - 테이블 `account`. `id`는 `@Id` + `GenerationType.IDENTITY`.
    - `AccountNumber`는 컬럼 `number` 하나에, `Money balance`는 컬럼 `balance`와 `currency`에 매핑한다. 방법(`AttributeConverter`, `@Embeddable`)은 직접 고르고, 고른 이유를 `docs/m5-4-mapping.md`에 2줄로 적는다.
    - `ownerName`, `ownerId`(M4-7)는 같은 이름의 snake_case 컬럼에 매핑한다. `AccountStatus`는 문자열(`ACTIVE`)로 저장한다.
@@ -25,14 +25,14 @@ M5-3의 `JdbcTemplate` 코드에는 아직 `UPDATE account SET balance = ?` 같�
    - `@OneToMany(mappedBy = "account") List<AccountTransaction> transactions` 연관을 둔다 (M5-5에서 사용). 지연 로딩이 기본값이다.
 3. **`lab.bank.ledger.AccountTransaction` 엔티티.** 테이블 `account_transaction`의 모든 컬럼을 매핑한다. `account`는 `@ManyToOne(fetch = FetchType.LAZY)` + `@JoinColumn(name = "account_id")`. Phase 1의 `Transaction`은 `record`라서 JPA 엔티티가 될 수 없으므로 그대로 두고, `AccountTransaction`에 `Transaction`으로 바꾸는 메서드(예: `toTransaction()`)와 `Transaction`으로부터 만드는 정적 팩토리를 둔다.
 4. **리포지토리.**
-   - `lab.bank.persistence.jpa.SpringDataAccountRepository extends JpaRepository<Account, Long>` — `Optional<Account> findByNumber(AccountNumber number)` 포함
+   - `lab.bank.persistence.jpa.SpringDataAccountRepository extends JpaRepository<Account, Long>`: `Optional<Account> findByNumber(AccountNumber number)` 포함
    - `lab.bank.persistence.jpa.SpringDataAccountTransactionRepository extends JpaRepository<AccountTransaction, Long>`
-   - `lab.bank.persistence.jpa.JpaAccountRepository implements AccountRepository` — 위 Spring Data 리포지토리에 위임. 이것을 기본 `AccountRepository` 빈으로 하고, M5-3의 `JdbcTemplateAccountRepository`와 `JdbcTemplateTransferService`에는 `@Profile("jdbc")`를 붙인다.
-5. **`lab.bank.transfer.JpaTransferEngine implements TransferEngine`** (Phase 2 인터페이스 그대로). `transfer`는 `@Transactional` 안에서 두 계좌를 `findByNumber`로 읽고, M2-7의 검증 순서(상태 → 통화 → 잔액 → 1일 한도)를 지킨 뒤 도메인 메서드로 출금·입금하고 거래내역 2건을 저장한다. 계좌에 대해 `save()`를 호출하지 않는다 (변경 감지로 UPDATE가 나가야 한다).
+   - `lab.bank.persistence.jpa.JpaAccountRepository implements AccountRepository`: 위 Spring Data 리포지토리에 위임. 이것을 기본 `AccountRepository` 빈으로 하고, M5-3의 `JdbcTemplateAccountRepository`와 `JdbcTemplateTransferService`에는 `@Profile("jdbc")`를 붙인다.
+5. **`lab.bank.transfer.JpaTransferEngine implements TransferEngine`** (Phase 2 인터페이스 그대로). `transfer`는 `@Transactional` 안에서 두 계좌를 `findByNumber`로 읽고, M2-7의 검증 순서(상태 → 통화 → 잔액 → 1일 한도)를 지킨 뒤 도메인 메서드로 출금, 입금하고 거래내역 2건을 저장한다. 계좌에 대해 `save()`를 호출하지 않는다 (변경 감지로 UPDATE가 나가야 한다).
    - 1일 한도: M2-7 규칙(Asia/Seoul 기준 하루 `TRANSFER_OUT` 합계 5,000,000원 이하, 정확히 5,000,000원은 허용)을 `account_transaction`의 합계 조회 1번으로 확인한다. 날짜 경계는 생성자로 받은 `Clock`으로 `[오늘 00:00, 내일 00:00)`을 만든다. 이 미션에서는 동시에 들어온 두 이체가 함께 한도를 넘는 경우를 막지 않는다 (Phase 6 M6-4).
    - `requestId` 멱등성은 Phase 4 웹 계층의 `IdempotencyStore`가 계속 담당하고 이 엔진은 하지 않는다 (DB 멱등성은 Phase 6 M6-3). 계좌 락도 걸지 않는다 (M5-8, M5-9에서 다룬다).
    - `balanceOf`, `historyOf`는 DB에서 읽는다. `historyOf`는 `occurred_at`, `id` 오름차순이다.
-6. **Phase 4 API 연결.** Phase 2의 메모리 `TransferEngine` 구현 빈에는 `@Profile("memory")`를 붙여 기본 실행에서 빼고, `JpaTransferEngine`이 유일한 `TransferEngine` 빈이 되게 한다 (M3-2의 "`TransferEngine` 빈은 정확히 1개" 테스트 유지). `BankService`의 계좌 개설·입금·출금·조회와 거래내역 기록·조회(M4-5 커서 조회 포함)는 내부 `Map`·`Ledger` 대신 `AccountRepository`와 `SpringDataAccountTransactionRepository`를 쓰게 바꾼다. 컨트롤러 코드는 바꾸지 않는다.
+6. **Phase 4 API 연결.** Phase 2의 메모리 `TransferEngine` 구현 빈에는 `@Profile("memory")`를 붙여 기본 실행에서 빼고, `JpaTransferEngine`이 유일한 `TransferEngine` 빈이 되게 한다 (M3-2의 "`TransferEngine` 빈은 정확히 1개" 테스트 유지). `BankService`의 계좌 개설, 입금, 출금, 조회와 거래내역 기록, 조회(M4-5 커서 조회 포함)는 내부 `Map`, `Ledger` 대신 `AccountRepository`와 `SpringDataAccountTransactionRepository`를 쓰게 바꾼다. 컨트롤러 코드는 바꾸지 않는다.
 7. **측정 도구.** 테스트에서 `EntityManagerFactory`를 `SessionFactory`로 `unwrap`해 `Statistics`를 얻는다. 각 시나리오의 "실행" 직전에 `statistics.clear()`를 호출한다. 준비 데이터는 별도 트랜잭션(예: `TransactionTemplate`)에서 커밋해 두어, 측정하는 트랜잭션의 영속성 컨텍스트가 비어 있는 상태에서 시작한다.
 
 ## 테스트 시나리오
@@ -41,7 +41,7 @@ M5-3의 `JdbcTemplate` 코드에는 아직 `UPDATE account SET balance = ?` 같�
 | # | 준비(Given) | 실행(When) | 기대 결과(Then) |
 |---|---|---|---|
 | 1 | Flyway V1 적용된 컨테이너 | 컨텍스트 시작 (`ddl-auto: validate`) | 시작 성공. 실패했다면 에러 메시지와 고친 매핑을 `docs/m5-4-mapping.md`에 기록 |
-| 2 | 빈 테이블, 트랜잭션 시작 | `save(Account.open(A, ...))` 직후 (커밋 전) SQL 수 확인 | SQL 수 1 (INSERT가 커밋 전에 이미 실행됨 — `IDENTITY` 키를 얻기 위해) |
+| 2 | 빈 테이블, 트랜잭션 시작 | `save(Account.open(A, ...))` 직후 (커밋 전) SQL 수 확인 | SQL 수 1 (INSERT가 커밋 전에 이미 실행됨: `IDENTITY` 키를 얻기 위해) |
 | 3 | A 저장됨, 새 트랜잭션 | `findById(id)` 2회 | SQL 수 1, 두 결과가 `==`로 같다 (1차 캐시) |
 | 4 | A 저장됨, 새 트랜잭션 | `findByNumber(A)` 2회 | SQL 수 2 (JPQL 조회는 1차 캐시를 거치지 않고 DB에 감), 두 결과는 `==`로 같다 (동일성 보장) |
 | 5 | A 저장됨, 새 트랜잭션 | `findByNumber(A)` → 10,000원 출금 → `save` 호출 없이 커밋 | UPDATE 수 1, 커밋 후 DB `balance = 90000.00` |
@@ -60,7 +60,7 @@ M5-3의 `JdbcTemplate` 코드에는 아직 `UPDATE account SET balance = ?` 같�
 계산식 (12번): SELECT 3(계좌 2개 조회 + 1일 한도 합계 조회 1) + INSERT 2(거래내역, IDENTITY라 즉시 실행) + UPDATE 2(커밋 시 flush) = 7.
 
 ## 제약
-- `spring.jpa.hibernate.ddl-auto`를 `create`, `create-drop`, `update`로 바꾸지 않는다 — 스키마의 원천은 Flyway 하나다.
+- `spring.jpa.hibernate.ddl-auto`를 `create`, `create-drop`, `update`로 바꾸지 않는다: 스키마의 원천은 Flyway 하나다.
 - 모든 `@ManyToOne`은 `FetchType.LAZY`로 둔다 (JPA 기본값은 `EAGER`). M5-5에서 `EAGER`가 만드는 N+1을 따로 관찰한다.
 - 엔티티를 Phase 4 API 응답으로 직접 반환하지 않는다 (Phase 4 규칙). 시나리오 9의 예외가 컨트롤러에서 직렬화 중에 터진다.
 - `spring.jpa.open-in-view`는 `false`로 둔다. `true`(Spring Boot 기본값)면 HTTP 요청이 끝날 때까지 영속성 컨텍스트가 열려 있어 시나리오 9가 웹 요청 안에서는 재현되지 않는다.
@@ -83,7 +83,7 @@ Hibernate 6.2 이후 MySQL에서는 `@Enumerated(EnumType.STRING)` 필드가 MyS
 
 ## 완료 기준
 - [ ] `./gradlew test`에서 이 미션의 시나리오 1~16 테스트가 통과하고, M5-3 테스트도 깨지지 않는다 (`jdbc` 프로파일 테스트는 해당 프로파일로 실행)
-- [ ] `./gradlew bootRun` 후 Phase 4의 계좌 개설·이체 API를 curl로 호출하고, 애플리케이션을 재시작한 뒤 잔액 조회 API가 같은 잔액을 돌려준다
+- [ ] `./gradlew bootRun` 후 Phase 4의 계좌 개설, 이체 API를 curl로 호출하고, 애플리케이션을 재시작한 뒤 잔액 조회 API가 같은 잔액을 돌려준다
 - [ ] `docs/m5-4-mapping.md`에 매핑 방법 선택 이유, 시나리오 1에서 만난 에러(없으면 "없음"), 시나리오 7의 SQL 로그 발췌가 있다
 - [ ] `docs/m5-2-measurements.md` 줄 수 표에 JPA 열이 추가되어 있다
 

@@ -1,6 +1,6 @@
 # M0-2 첫 Gradle 프로젝트 & 첫 테스트
 
-> 가이드 수준: L1 · 예상 시간: 2~3h · 선행: M0-1
+> 가이드 수준: L1, 예상 시간: 2~3h, 선행: M0-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -87,8 +87,8 @@ gradle wrapper --gradle-version 8.14.3    # gradlew, gradlew.bat, gradle/wrapper
 
 이름 앞뒤 공백은 그대로 둔다. `greet(" 민수")`는 `"안녕하세요,  민수님"`(쉼표 뒤 공백 2개)을 반환한다.
 
-### 6) 테스트 먼저 작성 — `GreeterTest.java`
-아래 코드를 직접 타이핑한다. 복사·붙여넣기를 하지 않는다. 이 Phase는 JUnit 5와 AssertJ 문법을 처음 보는 단계라 테스트 전체를 제공한다.
+### 6) 테스트 먼저 작성: `GreeterTest.java`
+아래 코드를 직접 타이핑한다. 복사, 붙여넣기를 하지 않는다. 이 Phase는 JUnit 5와 AssertJ 문법을 처음 보는 단계라 테스트 전체를 제공한다.
 
 ```java
 package lab.hello;

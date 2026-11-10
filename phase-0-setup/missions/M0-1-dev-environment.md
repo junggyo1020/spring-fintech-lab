@@ -1,6 +1,6 @@
 # M0-1 개발 환경 세팅
 
-> 가이드 수준: L1 · 예상 시간: 1~2h · 선행: 없음
+> 가이드 수준: L1, 예상 시간: 1~2h, 선행: 없음
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -35,7 +35,7 @@
    gradle --version                            # "Gradle 8.14.3"
    ```
 3. **IntelliJ IDEA 설치**
-   - 2025.3 버전부터 Community와 Ultimate가 "IntelliJ IDEA" 하나의 배포판으로 합쳐졌다. 구독 없이 Java·Gradle·Git 핵심 기능을 쓸 수 있고, Spring 전용 지원 같은 Ultimate 기능은 구독이 있어야 켜진다.
+   - 2025.3 버전부터 Community와 Ultimate가 "IntelliJ IDEA" 하나의 배포판으로 합쳐졌다. 구독 없이 Java, Gradle, Git 핵심 기능을 쓸 수 있고, Spring 전용 지원 같은 Ultimate 기능은 구독이 있어야 켜진다.
    - Phase 0~2는 구독 없이 진행할 수 있다. Phase 3부터 쓰는 Spring 기능도 Gradle 실행과 코드 편집은 구독 없이 가능하다.
 4. **Git 설정**
    ```bash
@@ -72,7 +72,7 @@
 | 생성(getter, 생성자 등) | ⌘ N | Alt Insert |
 
 ### 설치 확인 기록: `phase-0-setup/workspace/ENVIRONMENT.md`
-아래 4개 명령의 출력을 그대로 붙여 넣고, 맨 위에 OS 이름·버전과 기록 날짜를 적는다.
+아래 4개 명령의 출력을 그대로 붙여 넣고, 맨 위에 OS 이름, 버전과 기록 날짜를 적는다.
 
 | 명령 | 출력에서 확인할 것 |
 |---|---|

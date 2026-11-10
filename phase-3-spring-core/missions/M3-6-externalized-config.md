@@ -1,15 +1,15 @@
 # M3-6 설정 외부화와 프로파일
 
-> 가이드 수준: L2 · 예상 시간: 3~4h · 선행: M3-2
+> 가이드 수준: L2, 예상 시간: 3~4h, 선행: M3-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
-- 이체 한도·락 타임아웃·시간대를 코드 상수에서 `application.yml`로 옮기고, `@ConfigurationProperties` record + `@Validated`로 타입과 범위를 검증한다.
-- 잘못된 설정값 12가지(시나리오 2·3·5·6·9·10·12·13·14·15·16·17)에 대해 애플리케이션이 시작되지 않는 것을 `ApplicationContextRunner` 테스트로 보여주고, 실패 원인 예외 클래스를 값마다 단언한다.
-- `local`/`test` 프로파일과 환경 변수·명령행 인자로 같은 jar의 설정을 바꾸고, 우선순위를 실행 결과로 기록한다.
+- 이체 한도, 락 타임아웃, 시간대를 코드 상수에서 `application.yml`로 옮기고, `@ConfigurationProperties` record + `@Validated`로 타입과 범위를 검증한다.
+- 잘못된 설정값 12가지(시나리오 2, 3, 5, 6, 9, 10, 12, 13, 14, 15, 16, 17)에 대해 애플리케이션이 시작되지 않는 것을 `ApplicationContextRunner` 테스트로 보여주고, 실패 원인 예외 클래스를 값마다 단언한다.
+- `local`/`test` 프로파일과 환경 변수, 명령행 인자로 같은 jar의 설정을 바꾸고, 우선순위를 실행 결과로 기록한다.
 
 ## 배경
-M3-2에서 1일 한도 5,000,000원과 락 타임아웃 3초는 `BankConfig` 안의 상수였다. 한도를 3,000,000원으로 낮추라는 지시가 오면 코드를 고치고 다시 빌드·배포해야 한다. 반대로 설정 파일로 빼기만 하고 검증하지 않으면 더 위험하다. 운영자가 `lock-timeout: 3`이라고 쓰면 단위 없는 숫자는 밀리초로 해석돼 3ms가 되고, 모든 이체가 락 대기 시간 초과로 실패한다. `daily-limit` 키 이름을 `daily-limt`로 잘못 쓰면 Spring은 모르는 키를 무시하므로, 검증이 없으면 한도가 0이나 기본값으로 조용히 바뀐다. 이 미션은 그런 설정으로는 애플리케이션이 아예 시작되지 않게 만든다. README 6절의 `ApplicationContextRunner` 설명을 먼저 읽는다.
+M3-2에서 1일 한도 5,000,000원과 락 타임아웃 3초는 `BankConfig` 안의 상수였다. 한도를 3,000,000원으로 낮추라는 지시가 오면 코드를 고치고 다시 빌드, 배포해야 한다. 반대로 설정 파일로 빼기만 하고 검증하지 않으면 더 위험하다. 운영자가 `lock-timeout: 3`이라고 쓰면 단위 없는 숫자는 밀리초로 해석돼 3ms가 되고, 모든 이체가 락 대기 시간 초과로 실패한다. `daily-limit` 키 이름을 `daily-limt`로 잘못 쓰면 Spring은 모르는 키를 무시하므로, 검증이 없으면 한도가 0이나 기본값으로 조용히 바뀐다. 이 미션은 그런 설정으로는 애플리케이션이 아예 시작되지 않게 만든다. README 6절의 `ApplicationContextRunner` 설명을 먼저 읽는다.
 
 ## 요구사항
 패키지: `lab.bank.config`.
@@ -23,7 +23,7 @@ M3-2에서 1일 한도 5,000,000원과 락 타임아웃 3초는 `BankConfig` 안
 | `lockTimeout` | `java.time.Duration` | `lab.transfer.lock-timeout` | 필수, 100ms 이상 10s 이하 (양 끝 포함) | `NotNull`, `org.hibernate.validator.constraints.time.DurationMin(millis = 100)`, `DurationMax(seconds = 10)` |
 | `zone` | `java.time.ZoneId` | `lab.transfer.zone` | 필수 | `NotNull` |
 
-- `dailyLimit`이 `long`(기본형)이라 키가 없으면 0으로 바인딩되고 `@Positive`에 걸린다. `Long`(참조형)으로 바꾸지 않는다 — 시나리오 15가 이 동작에 의존한다.
+- `dailyLimit`이 `long`(기본형)이라 키가 없으면 0으로 바인딩되고 `@Positive`에 걸린다. `Long`(참조형)으로 바꾸지 않는다: 시나리오 15가 이 동작에 의존한다.
 - `lab.bank.config.TransferPropertiesConfig`(`@Configuration` + `@EnableConfigurationProperties(TransferProperties.class)`)로 등록한다. 테스트 시나리오의 `ApplicationContextRunner`는 이 클래스 하나만 띄운다.
 
 ### 2. 사용처
@@ -48,7 +48,7 @@ lab:
     lock-timeout: 3s
     zone: Asia/Seoul
 ```
-`src/main/resources/application-local.yml` — 로컬 디버깅: 브레이크포인트에 멈춘 동안 락 타임아웃이 터지지 않게 길게
+`src/main/resources/application-local.yml`: 로컬 디버깅: 브레이크포인트에 멈춘 동안 락 타임아웃이 터지지 않게 길게
 ```yaml
 lab:
   transfer:
@@ -58,7 +58,7 @@ logging:
   level:
     lab.bank: DEBUG
 ```
-`src/main/resources/application-test.yml` — 테스트: 락 타임아웃 시나리오가 3초씩 기다리지 않게 짧게
+`src/main/resources/application-test.yml`: 테스트: 락 타임아웃 시나리오가 3초씩 기다리지 않게 짧게
 ```yaml
 lab:
   transfer:
@@ -101,10 +101,10 @@ lab:
 시나리오 21 계산: 10,000,000 − 3,000,000 = 7,000,000. 그날 누적 3,000,000원에 1원을 더하면 3,000,001원 > 3,000,000원이라 거절.
 
 ## 제약
-- `@Value("${lab.transfer.daily-limit}")`로 값을 하나씩 주입하지 않는다 — 검증을 한곳에 모을 수 없고, 키 오타가 시작 시점에 드러나지 않는다.
-- `TransferProperties`에 setter나 가변 필드를 두지 않는다 (record) — 실행 중 설정이 바뀌면 이체 스레드마다 다른 한도를 볼 수 있다.
-- 비밀번호·토큰 같은 비밀 값은 이 미션의 `application.yml`에 넣지 않는다. 이 미션에는 비밀 값이 없다.
-- 시나리오 2~17에서 `@SpringBootTest`를 쓰지 않는다 — 실패하는 컨텍스트를 12번 띄우는 데 걸리는 시간과, 실패 원인 단언의 편의를 `ApplicationContextRunner`와 비교해 생각해볼 질문 1에 적는다.
+- `@Value("${lab.transfer.daily-limit}")`로 값을 하나씩 주입하지 않는다: 검증을 한곳에 모을 수 없고, 키 오타가 시작 시점에 드러나지 않는다.
+- `TransferProperties`에 setter나 가변 필드를 두지 않는다 (record): 실행 중 설정이 바뀌면 이체 스레드마다 다른 한도를 볼 수 있다.
+- 비밀번호, 토큰 같은 비밀 값은 이 미션의 `application.yml`에 넣지 않는다. 이 미션에는 비밀 값이 없다.
+- 시나리오 2~17에서 `@SpringBootTest`를 쓰지 않는다: 실패하는 컨텍스트를 12번 띄우는 데 걸리는 시간과, 실패 원인 단언의 편의를 `ApplicationContextRunner`와 비교해 생각해볼 질문 1에 적는다.
 
 ## 힌트
 <details>
@@ -117,7 +117,7 @@ lab:
 - [ ] `./gradlew test`에서 시나리오 1~21과 기존 M3-1~M3-5 테스트가 모두 통과한다
 - [ ] `grep -rnE "5_?000_?000|ofSeconds\(3\)" src/main/java` 결과가 0줄이다
 - [ ] `./gradlew build` 후 `build/classes/java/main/META-INF/spring-configuration-metadata.json`에 `lab.transfer.daily-limit`, `lab.transfer.lock-timeout`, `lab.transfer.zone` 3개 이름이 있다 (`spring-boot-configuration-processor`가 생성)
-- [ ] 시나리오 22~24의 실제 출력이 TIL에 있고, 명령행 인자·환경 변수·프로파일 파일·기본 `application.yml`의 우선순위를 23번 결과로 설명했다
+- [ ] 시나리오 22~24의 실제 출력이 TIL에 있고, 명령행 인자, 환경 변수, 프로파일 파일, 기본 `application.yml`의 우선순위를 23번 결과로 설명했다
 
 ## 생각해볼 질문
 1. 시나리오 2~17을 `@SpringBootTest`로 쓰면 무엇이 달라지는가? `./gradlew test --rerun-tasks`로 `ApplicationContextRunner` 테스트 클래스의 실행 시간을 측정하고, M3-2의 `docs/M3-2-test-timing.md`에 1행을 추가해 비교하라.

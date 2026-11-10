@@ -1,6 +1,6 @@
 # M3-4 프록시 직접 만들기
 
-> 가이드 수준: L2 · 예상 시간: 4~5h · 선행: M3-2
+> 가이드 수준: L2, 예상 시간: 4~5h, 선행: M3-2
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -10,7 +10,7 @@
 - 3가지 방식의 차이를 7개 열의 비교표로 기록한다.
 
 ## 배경
-M3-2까지 이체 엔진에는 "이 호출이 몇 ms 걸렸나"를 남기는 코드가 없다. 대외기관 연동이나 DB 락 대기로 이체가 3초씩 걸려도, 메서드마다 `System.nanoTime()`을 직접 넣지 않으면 어디가 느린지 모른다. 그렇다고 이체·조회 메서드 20개에 측정 코드를 복사하면 1곳만 빠져도 장애 분석 때 그 구간이 비어 있다. 프록시는 target 코드를 고치지 않고 호출 앞뒤에 기능을 붙인다. Spring의 AOP(M3-5)와 `@Transactional`(Phase 5)은 이 미션에서 손으로 만드는 CGLIB 프록시를 Spring이 자동으로 만들어 주는 것이다. README 3절을 먼저 읽는다.
+M3-2까지 이체 엔진에는 "이 호출이 몇 ms 걸렸나"를 남기는 코드가 없다. 대외기관 연동이나 DB 락 대기로 이체가 3초씩 걸려도, 메서드마다 `System.nanoTime()`을 직접 넣지 않으면 어디가 느린지 모른다. 그렇다고 이체, 조회 메서드 20개에 측정 코드를 복사하면 1곳만 빠져도 장애 분석 때 그 구간이 비어 있다. 프록시는 target 코드를 고치지 않고 호출 앞뒤에 기능을 붙인다. Spring의 AOP(M3-5)와 `@Transactional`(Phase 5)은 이 미션에서 손으로 만드는 CGLIB 프록시를 Spring이 자동으로 만들어 주는 것이다. README 3절을 먼저 읽는다.
 
 ## 요구사항
 패키지: `lab.bank.proxy`. 이 미션의 클래스는 Spring 빈으로 등록하지 않는다 (`@Component` 없음). 테스트는 순수 단위 테스트로 작성한다.
@@ -53,7 +53,7 @@ public final class TimingProxies {
 
 ### 5. 측정 대상 클래스
 1. `FeeCalculator` (`lab.bank.proxy`, 인터페이스 없음, `final` 아님). 생성자 `FeeCalculator(String policyName)`.
-   - `Money feeOf(Money amount)`: 이 미션의 수수료 규칙 — 금액이 1,000,000원 미만이면 500원, 1,000,000원 이상이면 1,000원. 금액이 0원 이하면 Phase 1의 `InvalidAmountException`.
+   - `Money feeOf(Money amount)`: 이 미션의 수수료 규칙: 금액이 1,000,000원 미만이면 500원, 1,000,000원 이상이면 1,000원. 금액이 0원 이하면 Phase 1의 `InvalidAmountException`.
    - `Money totalDebit(Money amount)`: `amount + this.feeOf(amount)`. **반드시 `feeOf`를 내부 호출해서** 구한다 (self-invocation 관찰용).
    - `public final String policyName()`: 생성자에서 받은 `policyName` 필드를 반환한다.
 2. 테스트 전용 클래스 (`src/test/java/lab/bank/proxy/`):
@@ -83,13 +83,13 @@ public final class TimingProxies {
 | 15 | J, target = `StubTransferEngine`, Phase 2 README 5절 동시성 틀, 스레드 100개 | 각 스레드가 `balanceOf` 1번 | `timings()` 크기 100 |
 
 시나리오 12 계산: 10,000원 < 1,000,000원 → 수수료 500원 → 10,000 + 500 = 10,500원.
-시나리오 13·14의 동작은 Spring Boot 4.1.2(Spring Framework 7)에서 실행해 확인했다. 13번 실행 시 `CglibAopProxy`가 `Public final method [...] cannot get proxied via CGLIB` 경고를 로그에 남긴다.
+시나리오 13, 14의 동작은 Spring Boot 4.1.2(Spring Framework 7)에서 실행해 확인했다. 13번 실행 시 `CglibAopProxy`가 `Public final method [...] cannot get proxied via CGLIB` 경고를 로그에 남긴다.
 
 ## 제약
-- 데코레이터·JDK 프록시·CGLIB 프록시는 모두 같은 `TimingRecorder`에 기록한다. 방식마다 다른 측정 코드를 쓰면 비교가 되지 않는다.
-- `FeeCalculator`와 `StubTransferEngine`(target) 코드 안에 측정 코드를 넣지 않는다 — target을 고치지 않는 것이 프록시를 쓰는 이유다.
+- 데코레이터, JDK 프록시, CGLIB 프록시는 모두 같은 `TimingRecorder`에 기록한다. 방식마다 다른 측정 코드를 쓰면 비교가 되지 않는다.
+- `FeeCalculator`와 `StubTransferEngine`(target) 코드 안에 측정 코드를 넣지 않는다: target을 고치지 않는 것이 프록시를 쓰는 이유다.
 - 시나리오 1의 상한값(예: `< 100ms`)을 단언하지 않는다. CI 환경 부하에 따라 sleep이 길어져 테스트가 우연히 실패한다.
-- Spring AOP(`@Aspect`)를 쓰지 않는다 — M3-5에서 쓴다.
+- Spring AOP(`@Aspect`)를 쓰지 않는다: M3-5에서 쓴다.
 
 ## 힌트
 <details>
@@ -106,6 +106,6 @@ public final class TimingProxies {
 
 ## 생각해볼 질문
 1. 시나리오 12에서 `feeOf`도 측정되게 하려면 `FeeCalculator`를 어떻게 바꿔야 하나? 방법 2가지를 적고, 각각 `FeeCalculator`가 프록시의 존재를 알게 되는지 비교하라 (M3-5에서 Spring AOP로 같은 문제를 다시 만난다).
-2. 데코레이터 방식은 메서드마다 코드를 써야 하지만 컴파일러가 누락을 잡아준다. JDK 프록시·CGLIB는 코드가 적은 대신 무엇을 잃는가? 측정 대상이 메서드 3개뿐이면 어떤 방식을 고르겠는가?
+2. 데코레이터 방식은 메서드마다 코드를 써야 하지만 컴파일러가 누락을 잡아준다. JDK 프록시, CGLIB는 코드가 적은 대신 무엇을 잃는가? 측정 대상이 메서드 3개뿐이면 어떤 방식을 고르겠는가?
 3. Spring Boot가 인터페이스가 있는 빈에도 기본으로 CGLIB 프록시를 쓰는 이유를 시나리오 6과 연결해 설명하라 (`TransferEngine` 타입 대신 구현 클래스 타입으로 주입받는 코드가 있다면?).
-4. (Phase 5 연결) Phase 5의 `@Transactional`도 이 미션의 `TimingInterceptor`처럼 메서드 호출 앞뒤에 "트랜잭션 시작 / 커밋 또는 롤백"을 붙이는 프록시다. 시나리오 12·13의 결과로 볼 때, `final` 메서드나 같은 클래스 내부 호출에 붙은 `@Transactional`은 어떻게 동작할지 예측해 적어라.
+4. (Phase 5 연결) Phase 5의 `@Transactional`도 이 미션의 `TimingInterceptor`처럼 메서드 호출 앞뒤에 "트랜잭션 시작 / 커밋 또는 롤백"을 붙이는 프록시다. 시나리오 12, 13의 결과로 볼 때, `final` 메서드나 같은 클래스 내부 호출에 붙은 `@Transactional`은 어떻게 동작할지 예측해 적어라.

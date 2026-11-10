@@ -1,6 +1,6 @@
 # M1-2 `Account` 엔티티와 도메인 예외
 
-> 가이드 수준: L1 · 예상 시간: 5~7h · 선행: M1-1
+> 가이드 수준: L1, 예상 시간: 5~7h, 선행: M1-1
 
 ## 목표
 이 미션을 끝내면 다음을 할 수 있다.
@@ -135,7 +135,7 @@ BankException (lab.bank.common, abstract, extends RuntimeException)
 14는 `@CsvSource({"ACTIVE,ACTIVE,false", "ACTIVE,FROZEN,true", ...})` 9줄로 작성한다.
 
 ## 제약
-- `Account`의 잔액·상태를 바꾸는 public 메서드는 `deposit`, `withdraw`, `freeze`, `unfreeze`, `close` 5개뿐이다 (리플렉션 제외).
+- `Account`의 잔액, 상태를 바꾸는 public 메서드는 `deposit`, `withdraw`, `freeze`, `unfreeze`, `close` 5개뿐이다 (리플렉션 제외).
 - 예외를 던진 뒤 상태가 바뀐 채로 남으면 안 된다 (시나리오 5, 10, 12). 검사 → 변경 순서로 작성한다.
 - 도메인 예외는 모두 `BankException`을 상속한다. `IllegalArgumentException`은 `null`, 형식 오류처럼 호출 코드의 버그에만 쓴다.
 - 예외 메시지와 `toString()`에 전체 계좌번호를 넣지 않는다.

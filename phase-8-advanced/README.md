@@ -1,10 +1,10 @@
-# Phase 8 — 분산 환경과 운영 (4주)
+# Phase 8: 분산 환경과 운영 (4주)
 
-> 가이드 수준: L3 · 선행: Phase 7 완료 · 이 Phase의 workspace 시작 방법: Phase 6, 7을 Gradle 멀티 모듈로 합침
+> 가이드 수준: L3, 선행: Phase 7 완료, 이 Phase의 workspace 시작 방법: Phase 6, 7을 Gradle 멀티 모듈로 합침
 
 ## 학습 목표
 이 Phase를 끝내면 다음을 할 수 있다.
-- `docker compose up -d` 한 번으로 MySQL·Redis·Kafka·corebank·trading·Prometheus·Grafana·Jaeger 8개 컨테이너를 띄우고, 두 서비스의 `/actuator/health`가 120초 안에 200을 돌려주는 것을 스크립트로 보여준다
+- `docker compose up -d` 한 번으로 MySQL, Redis, Kafka, corebank, trading, Prometheus, Grafana, Jaeger 8개 컨테이너를 띄우고, 두 서비스의 `/actuator/health`가 120초 안에 200을 돌려주는 것을 스크립트로 보여준다
 - DB 커밋과 Kafka 발행을 따로 하면 이벤트가 유실되거나 유령 이벤트가 생기는 것을 Testcontainers 테스트로 재현하고, Transactional Outbox와 멱등 컨슈머로 두 경우를 모두 0건으로 만든다
 - 매수 주문 Saga(홀드 → 매칭 → 체결 확정)의 단계별 실패를 주입하는 테스트 12개 이상으로 "홀드 누수 0원, 생성된 돈 0원"을 증명한다
 - Grafana 패널 12개(PromQL 포함)와 Jaeger 트레이스로 이체 p99, 커넥션 풀 대기, 락 대기를 수치로 읽고, k6로 500 req/s 5분 부하를 걸어 병목 1개 이상을 근거 지표와 함께 찾아 전후 비교표로 남긴다
@@ -12,7 +12,7 @@
 
 ## 이 Phase의 결과물
 
-Phase 6의 corebank와 Phase 7의 trading을 하나의 Gradle 멀티 모듈 프로젝트로 합친다. 두 서비스는 별도 프로세스·별도 DB 스키마로 실행되고, Kafka 토픽으로만 대화한다.
+Phase 6의 corebank와 Phase 7의 trading을 하나의 Gradle 멀티 모듈 프로젝트로 합친다. 두 서비스는 별도 프로세스, 별도 DB 스키마로 실행되고, Kafka 토픽으로만 대화한다.
 
 ```
 phase-8-advanced/workspace/
@@ -26,7 +26,7 @@ phase-8-advanced/workspace/
 │       ├── ...                  Phase 6 패키지 그대로
 │       ├── outbox/              M8-3: OutboxEvent, OutboxRelay
 │       ├── messaging/           M8-3: 멱등 컨슈머, processed_message
-│       └── hold/                M8-4: 매수 대금 홀드·확정·해제 명령 처리
+│       └── hold/                M8-4: 매수 대금 홀드, 확정, 해제 명령 처리
 ├── trading/                     Phase 7 코드. 패키지 lab.trading
 │   ├── Dockerfile
 │   └── src/main/java/lab/trading/
@@ -37,7 +37,7 @@ phase-8-advanced/workspace/
 ├── docker/
 │   ├── mysql/init/01-databases.sql
 │   ├── prometheus/prometheus.yml
-│   └── grafana/                 데이터소스·대시보드 프로비저닝
+│   └── grafana/                 데이터소스, 대시보드 프로비저닝
 ├── load-test/transfer.js        M8-6 k6 스크립트
 ├── scripts/wait-healthy.sh      M8-1
 └── docs/
@@ -116,8 +116,8 @@ Saga는 여러 서비스에 걸친 업무를 **각 서비스의 로컬 트랜잭
 | 기둥 | 답하는 질문 | 이 Phase의 도구 | 예 |
 |---|---|---|---|
 | 메트릭 | 지금 얼마나, 몇 %인가 (집계 수치) | Micrometer → `/actuator/prometheus` → Prometheus → Grafana | 이체 p99 = 182ms, 커넥션 대기 7개 |
-| 로그 | 이 요청에서 무슨 일이 있었나 (개별 사건) | Logback 콘솔 로그 + MDC `traceId`·`spanId` | `[traceId-spanId] 이체 실패: LIMIT_EXCEEDED` |
-| 트레이스 | 한 요청이 어느 서비스·구간에서 시간을 썼나 | Micrometer Tracing + OpenTelemetry → OTLP → Jaeger | HTTP 12ms → DB 40ms → Kafka → corebank 컨슈머 25ms |
+| 로그 | 이 요청에서 무슨 일이 있었나 (개별 사건) | Logback 콘솔 로그 + MDC `traceId`, `spanId` | `[traceId-spanId] 이체 실패: LIMIT_EXCEEDED` |
+| 트레이스 | 한 요청이 어느 서비스, 구간에서 시간을 썼나 | Micrometer Tracing + OpenTelemetry → OTLP → Jaeger | HTTP 12ms → DB 40ms → Kafka → corebank 컨슈머 25ms |
 
 세 가지는 `traceId`로 연결한다. Grafana에서 p99가 튄 시점을 찾고, 그 시점 로그에서 `traceId`를 찾고, Jaeger에서 그 트레이스를 열어 느린 구간을 찾는다. Google SRE 책 6장은 사용자 관점 지표로 지연(latency), 트래픽(traffic), 에러(errors), 포화도(saturation)의 네 가지 골든 시그널을 든다. M8-5 대시보드의 패널은 이 네 분류로 나눈다.
 
@@ -186,8 +186,8 @@ Testcontainers 2.0부터 모듈 이름에 `testcontainers-` 접두사가 붙었�
 | 주 | 미션 | 개념 학습 범위 |
 |---|---|---|
 | 1주 | M8-1, M8-2 | 이 README 1절, Kafka 공식 문서 "Design" 장의 Motivation, Persistence, The Producer, The Consumer, Message Delivery Semantics 절 |
-| 2주 | M8-3, M8-5 요구사항 1~6(메트릭·대시보드) | 2~4절, microservices.io Transactional outbox·Idempotent Consumer, DDIA 11장 |
-| 3주 | M8-4, M8-5 요구사항 7~9(트레이스·로그) | 5~6절, microservices.io Saga, Google SRE 책 6장 |
+| 2주 | M8-3, M8-5 요구사항 1~6(메트릭, 대시보드) | 2~4절, microservices.io Transactional outbox, Idempotent Consumer, DDIA 11장 |
+| 3주 | M8-4, M8-5 요구사항 7~9(트레이스, 로그) | 5~6절, microservices.io Saga, Google SRE 책 6장 |
 | 4주 | M8-6, M8-7 | 7~8절, k6 문서 Scenarios |
 
 M8-5의 선행은 M8-1뿐이지만, 트레이스 요구사항은 서비스 두 개를 오가는 M8-4 Saga 흐름을 대상으로 하므로 3주 차에 마친다.
@@ -208,16 +208,16 @@ M8-5(6~8h)를 요구사항 1~6에 3~4h, 7~9에 3~4h로 나누면 주별 합계�
 
 ## 읽을거리
 - microservices.io 패턴 페이지 3개: "Pattern: Transactional outbox", "Pattern: Saga", "Pattern: Idempotent Consumer" (https://microservices.io/patterns/)
-- Apache Kafka 공식 문서 "Design" 장 — Motivation, Persistence, The Producer, The Consumer, Message Delivery Semantics, Replication 절 (Efficiency 절은 건너뛴다) (https://kafka.apache.org/documentation/#design)
-- Martin Kleppmann, 『Designing Data-Intensive Applications』 1판 11장 "Stream Processing" — "Transmitting Event Streams", "Databases and Streams"(Keeping Systems in Sync, Change Data Capture) 절
-- Grafana k6 문서 "Scenarios" — Executors 중 constant-arrival-rate, "Thresholds" (https://grafana.com/docs/k6/latest/using-k6/scenarios/)
-- Google 『Site Reliability Engineering』 6장 "Monitoring Distributed Systems" — "The Four Golden Signals" 절 (https://sre.google/sre-book/monitoring-distributed-systems/)
+- Apache Kafka 공식 문서 "Design" 장: Motivation, Persistence, The Producer, The Consumer, Message Delivery Semantics, Replication 절 (Efficiency 절은 건너뛴다) (https://kafka.apache.org/documentation/#design)
+- Martin Kleppmann, 『Designing Data-Intensive Applications』 1판 11장 "Stream Processing": "Transmitting Event Streams", "Databases and Streams"(Keeping Systems in Sync, Change Data Capture) 절
+- Grafana k6 문서 "Scenarios": Executors 중 constant-arrival-rate, "Thresholds" (https://grafana.com/docs/k6/latest/using-k6/scenarios/)
+- Google 『Site Reliability Engineering』 6장 "Monitoring Distributed Systems": "The Four Golden Signals" 절 (https://sre.google/sre-book/monitoring-distributed-systems/)
 - Spring Boot 4.1 레퍼런스 "Observability", "Metrics", "Tracing" 장 (https://docs.spring.io/spring-boot/reference/actuator/)
 
 ## 완료 기준
-- [ ] `docker compose down -v && docker compose up -d` 후 `scripts/wait-healthy.sh`가 120초 안에 corebank·trading 모두 200을 받고 종료 코드 0으로 끝난다
+- [ ] `docker compose down -v && docker compose up -d` 후 `scripts/wait-healthy.sh`가 120초 안에 corebank, trading 모두 200을 받고 종료 코드 0으로 끝난다
 - [ ] `./gradlew test`가 통과하고, 그중 M8-2의 이중 쓰기 재현 테스트가 Outbox 적용 후 "유실 0건, 유령 0건"을 단언한다
-- [ ] 같은 메시지를 2번 이상 재전달해도 부수효과가 1번만 반영되는 것을 단언하는 테스트가 corebank·trading 컨슈머마다 1개 이상 있다
+- [ ] 같은 메시지를 2번 이상 재전달해도 부수효과가 1번만 반영되는 것을 단언하는 테스트가 corebank, trading 컨슈머마다 1개 이상 있다
 - [ ] M8-4 Saga 실패 주입 테스트 12개 이상이 통과하고, 각 테스트가 끝날 때 corebank의 홀드 금액 합계와 Saga 장부상 미정산 홀드 합계가 같다
 - [ ] Grafana 대시보드 JSON이 `docker/grafana/`에 있고, 패널 12개 이상이 PromQL로 정의되어 있다
 - [ ] `docs/load-test-report.md`에 변경 1가지씩 최소 3회의 전후 측정 행이 있고, 마지막 행이 "500 req/s, p99 < 300ms, 에러율 < 0.1%"를 만족하거나 만족하지 못한 이유를 지표 값으로 적었다
