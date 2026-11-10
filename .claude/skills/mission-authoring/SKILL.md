@@ -29,6 +29,8 @@ description: spring-fintech-lab의 Phase README와 미션 문서(missions/M*-*.m
 | "이해한다", "익힌다", "체감한다" | "~를 테스트로 보여준다", "~의 차이를 표로 기록한다" |
 | "적절히 처리", "알맞게" | 처리 규칙 자체를 쓴다 ("예외 X를 던지고 잔액은 바뀌지 않는다") |
 | "그때그때", "가볍게 훑고" | 조건과 범위를 쓴다 ("README 1~3절만 읽고") |
+| 가운뎃점(`\u00b7`), 긴 줄표(`\u2014`), 이모지 | 쉼표, 괄호, 줄 나누기, 표에서는 단어(충족, 미충족) |
+| 근거 없는 평가("훌륭한", "깔끔한"), 추측("~것 같다"), 내용 없는 연결어("결론적으로") | 확인한 사실과 수치. 전체 목록은 `.claude/skills/mission-review/references/writing-rules.md` 3절 |
 
 `scripts`는 `.claude/skills/curriculum-verification/scripts/check_docs.py`에 있다. 작성 후 실행해 경고를 0개로 만든다. 경고가 정당한 사용(예: 인용, 코드 안 문자열)이면 그대로 두고 보고에 이유를 적는다.
 
