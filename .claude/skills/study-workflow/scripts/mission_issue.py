@@ -61,6 +61,8 @@ def progress_list(info):
             "- [ ] 시나리오마다 실패하는 테스트를 먼저 커밋했다",
             "- [ ] 구현 후 `./gradlew test`가 통과한다",
         ] + [f"- [ ] 참조 시나리오 {sid} (`@DisplayName(\"{info['id']} #{sid} ...\")`)" for sid, _ in info["scenarios"]])
+    if info["manual"]:
+        return "\n".join(f"- [ ] 시나리오 #{sid}: 직접 실행한 결과가 기대 결과와 같다" for sid, _ in info["scenarios"])
     first = info["scenarios"][0][0] if info["scenarios"] else "1"
     example = f"{info['id']} {first if first.startswith('실험') else '#' + first}"
     rows = [f"테스트 이름 형식: `@DisplayName(\"{example} 규칙을 문장으로\")` (PR 자동 점검이 이 형식으로 시나리오를 찾는다)", ""]

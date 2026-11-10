@@ -102,6 +102,8 @@ def parse(doc):
         "prereq": prereq, "prereq_ids": re.findall(r"M\d+-\d+", prereq),
         "branch": f"phase{phase}/m{phase}-{num}-{slug}",
         "criteria": criteria, "scenarios": scenarios,
+        # 완료 기준에 테스트 실행이 없는 미션(M0-1 명령 출력 기록, M0-3 CI 실행, M5-1 SQL 실행)은 시나리오를 직접 실행해 확인한다
+        "manual": meta.group(1) != "L3" and not any("gradlew" in c or "test" in c.lower() for c in criteria),
         "doc_rel": doc.relative_to(ROOT).as_posix(),
         "readme_rel": (doc.parent.parent / "README.md").relative_to(ROOT).as_posix(),
         "phase_title": phase_title, "week": week, "scope": scope,

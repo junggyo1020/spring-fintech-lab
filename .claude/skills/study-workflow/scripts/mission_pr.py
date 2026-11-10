@@ -108,11 +108,12 @@ def scenario_section(info, roots):
         if not info["scenarios"]:
             return "\n".join(parts)
         parts.append("미션 문서가 제공한 참조 시나리오:")
+    if info["manual"]:
+        return (f"테스트 코드 없이 시나리오 {len(info['scenarios'])}개를 직접 실행해 확인하는 미션이다. "
+                "완료 기준에 적힌 기록 파일과 실행 결과로 대응한다.")
     names = display_names(roots)
     if not names and info["level"] != "L3":
-        parts.append("workspace에 `@DisplayName`이 있는 테스트가 없다. "
-                     f"미션 문서의 시나리오 {len(info['scenarios'])}개를 테스트 코드 없이 확인하는 미션(M0-1 등)이면 "
-                     "완료 기준에 적힌 기록 파일로 대응한다.")
+        parts.append(f"workspace에 `@DisplayName`이 있는 테스트가 없다. 시나리오 {len(info['scenarios'])}개 모두 없음.")
         return "\n\n".join(parts)
     rows = ["| 시나리오 | 테스트(@DisplayName) | 상태 |", "|---|---|---|"]
     missing = []
@@ -126,7 +127,7 @@ def scenario_section(info, roots):
     return "\n\n".join(parts)
 
 
-def commit_section():
+def commit_section(manual=False):
     log = run(["git", "log", "--reverse", "--format=%h%x09%s", "origin/main..HEAD"], check=False).splitlines()
     if not log:
         return "origin/main 이후 커밋이 없다."
@@ -140,7 +141,9 @@ def commit_section():
         if kind == "구현" and first_impl is None:
             first_impl = i
         rows.append(f"| {i} | `{sha}` | {clean(subject).replace('|', '/')} | {kind} |")
-    if first_test is None:
+    if manual:
+        verdict = "판정: 해당 없음. 테스트 코드 없이 직접 실행해 확인하는 미션이라 커밋 순서를 보지 않는다."
+    elif first_test is None:
         verdict = "판정: 미충족. `[test]` 커밋이 없다."
     elif first_impl is not None and first_impl < first_test:
         verdict = f"판정: 미충족. 첫 구현 커밋({first_impl}번)이 첫 `[test]` 커밋({first_test}번)보다 먼저 있다."
@@ -287,7 +290,7 @@ def main():
     review_log = old.get("리뷰 반영 기록") or REVIEW_LOG
 
     text = build_body(info, slug, issue, test_section(roots, a.skip_tests), scenario_section(info, roots),
-                      commit_section(), forbidden_section(files), diffstat_section(), criteria, notes, review_log)
+                      commit_section(info["manual"]), forbidden_section(files), diffstat_section(), criteria, notes, review_log)
 
     if a.dry_run:
         print(f"===== {issue_title(info)}  ({branch} → main)\n{text}")
