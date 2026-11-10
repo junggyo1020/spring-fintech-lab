@@ -133,6 +133,6 @@ M1-4의 선행은 M1-1뿐이라 1주차에 둔다. M1-4와 M1-5를 같은 주에
 
 ## 완료 기준
 - [ ] `phase-1-java-foundation/workspace`에서 `./gradlew test jacocoTestReport jacocoTestCoverageVerification`이 `BUILD SUCCESSFUL`로 끝난다
-- [ ] 미션 5개 각각에서 `test:` 커밋이 구현 커밋보다 먼저 있다 (`git log --oneline`)
+- [ ] 미션 5개 각각에서 `[test]` 커밋이 구현 커밋보다 먼저 있다 (`git log --oneline`)
 - [ ] 각 미션의 "생각해볼 질문"에 대한 TIL이 `til/`에 있다
 - [ ] [레벨 진단](../docs/self-check.md) Phase 1 항목을 말로 설명할 수 있다

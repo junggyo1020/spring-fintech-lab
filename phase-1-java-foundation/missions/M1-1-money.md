@@ -135,7 +135,7 @@ M0-2에서 만든 Gradle 설정과 given/when/then 테스트 구조를 그대로
 ## 완료 기준
 - [ ] `./gradlew test --tests "lab.bank.money.*"`에서 시나리오 1~22에 해당하는 테스트가 모두 PASSED로 출력된다
 - [ ] `src/main/java/lab/bank/money/`에 `Money`, `Currency`, `CurrencyMismatchException` 3개 파일이 있고, `double`·`float`가 한 번도 나오지 않는다
-- [ ] `git log --oneline`에서 `MoneyTest`를 추가한 `test:` 커밋이 `Money` 구현 커밋보다 먼저 있다
+- [ ] `git log --oneline`에서 `MoneyTest`를 추가한 `[test]` 커밋이 `Money` 구현 커밋보다 먼저 있다
 - [ ] TIL에 `final class`와 `record`로 각각 만들어 본 결과(코드 줄 수, 정규화를 넣은 위치)를 비교한 표가 있다
 
 ## 생각해볼 질문

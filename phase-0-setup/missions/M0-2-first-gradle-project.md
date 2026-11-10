@@ -145,10 +145,10 @@ class GreeterTest {
 ```bash
 git checkout -b phase0/m0-2-hello
 git add phase-0-setup/workspace
-git commit -m "test: Greeter 인사말 테스트 추가"
+git commit -m "[test] Greeter 인사말 테스트 추가"
 # Greeter 구현 후
 git add phase-0-setup/workspace
-git commit -m "feat: Greeter 구현"
+git commit -m "[feat] Greeter 구현"
 git push -u origin phase0/m0-2-hello
 ```
 
@@ -169,7 +169,7 @@ GitHub에서 PR을 연다. PR 본문에 `./gradlew test` 출력 중 PASSED 5줄�
 ## 제약
 - IDE의 "New Project" 마법사, Spring Initializr를 쓰지 않는다. 빌드 파일을 직접 작성하는 것이 이 미션의 목적이다.
 - `gradle test`(설치된 Gradle)가 아니라 `./gradlew test`(Wrapper)로 실행한다. CI(M0-3)도 Wrapper로 실행한다.
-- 테스트 커밋(`test:`)과 구현 커밋(`feat:`)을 하나로 합치지 않는다. 리뷰어가 커밋 순서로 테스트를 먼저 썼는지 확인한다.
+- 테스트 커밋(`[test]`)과 구현 커밋(`[feat]`)을 하나로 합치지 않는다. 리뷰어가 커밋 순서로 테스트를 먼저 썼는지 확인한다.
 
 ## 힌트
 <details>
@@ -194,7 +194,7 @@ GitHub에서 PR을 연다. PR 본문에 `./gradlew test` 출력 중 PASSED 5줄�
 ## 완료 기준
 - [ ] `phase-0-setup/workspace`에서 `./gradlew test`를 실행하면 `GreeterTest`의 테스트 5개가 PASSED로 출력되고 `BUILD SUCCESSFUL`이 나온다
 - [ ] `gradle/wrapper/gradle-wrapper.properties`의 `distributionUrl`에 `gradle-8.14.3-bin.zip`이 들어 있고, 이 파일과 `gradlew`가 커밋되어 있다
-- [ ] `git log --oneline` 에서 `test:` 커밋이 `feat:` 커밋보다 먼저 있다
+- [ ] `git log --oneline` 에서 `[test]` 커밋이 `[feat]` 커밋보다 먼저 있다
 - [ ] PR이 열려 있고 본문에 PASSED 5줄이 붙어 있다
 
 ## 생각해볼 질문

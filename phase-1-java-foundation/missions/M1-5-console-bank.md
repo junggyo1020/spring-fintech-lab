@@ -221,7 +221,7 @@ tasks.jacocoTestCoverageVerification {
 - [ ] `./gradlew test jacocoTestReport jacocoTestCoverageVerification`이 `BUILD SUCCESSFUL`로 끝난다
 - [ ] `build/reports/jacoco/test/html/index.html`에서 `lab.bank.console`을 뺀 패키지의 Lines 커버리지가 모두 90% 이상이고, 이 화면 캡처가 PR 본문에 있다
 - [ ] `src/main/java/lab/bank`에서 `System.out`, `System.in`, `Scanner`를 검색하면 `console` 패키지에서만 나온다
-- [ ] `./gradlew run -q --console=plain`으로 실행해 메뉴 1~8을 각각 1회 이상 실행했다. 이 과정에서 찾은 버그마다 재현 테스트 커밋(`test:`)이 수정 커밋(`fix:`)보다 먼저 있고, PR 본문에 버그 목록이 있다 (버그가 없었다면 "없음"과 실행한 입력 목록)
+- [ ] `./gradlew run -q --console=plain`으로 실행해 메뉴 1~8을 각각 1회 이상 실행했다. 이 과정에서 찾은 버그마다 재현 테스트 커밋(`[test]`)이 수정 커밋(`[fix]`)보다 먼저 있고, PR 본문에 버그 목록이 있다 (버그가 없었다면 "없음"과 실행한 입력 목록)
 
 ## 생각해볼 질문
 1. `BankConsoleApp.main`에서 `new`로 조립하는 객체 수를 세어 본다. 클래스가 100개로 늘고 `BankService`의 생성자 인자가 하나 추가되면 `main`의 몇 군데를 고쳐야 하는가? Phase 3 M3-1에서 만들 DI 컨테이너가 이 중 무엇을 대신하는가?
