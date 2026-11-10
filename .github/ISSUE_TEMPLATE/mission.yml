@@ -1,0 +1,47 @@
+name: 미션
+description: 커리큘럼 미션 1개를 진행할 때 만든다. 보통은 `study-workflow` 스킬의 스크립트가 미션 문서에서 자동으로 채워 만든다.
+title: "[M?-?] 미션 제목"
+labels: ["mission"]
+body:
+  - type: input
+    id: mission
+    attributes:
+      label: 미션
+      description: "미션 번호와 제목. 예: M1-1 `Money` 값 객체"
+    validations:
+      required: true
+  - type: input
+    id: doc
+    attributes:
+      label: 미션 문서
+      description: missions/ 아래 미션 문서의 GitHub 링크
+    validations:
+      required: true
+  - type: input
+    id: meta
+    attributes:
+      label: 가이드 수준 · 예상 시간 · 선행
+      description: "미션 문서 메타 줄 그대로. 예: L1 · 4~6h · 선행: M0-2"
+    validations:
+      required: true
+  - type: input
+    id: branch
+    attributes:
+      label: 작업 브랜치
+      description: "phase{P}/m{P}-{N}-{slug} 형식. 예: phase1/m1-1-money"
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 완료 기준
+      description: 미션 문서의 완료 기준 체크박스를 그대로 옮긴다. PR을 올리기 전에 모두 체크한다.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 진행 메모
+      description: 막힌 지점(시도한 것 / 기대한 결과 / 실제 결과·에러 원문), 질문, 다음에 찾아볼 것
+    validations:
+      required: false

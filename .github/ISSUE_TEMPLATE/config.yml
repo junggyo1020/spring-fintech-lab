@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 커리큘럼 맵 (미션 목록과 선행 관계)
+    url: https://github.com/junggyo1020/spring-fintech-lab/blob/main/docs/curriculum-map.md
+    about: 미션 번호와 순서를 확인한다
