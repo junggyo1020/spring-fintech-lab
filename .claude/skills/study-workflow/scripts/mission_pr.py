@@ -3,7 +3,7 @@
 
 스크립트가 채우는 것
   미션 절: 이슈 연결(Closes #N), 미션 문서 링크, 가이드 수준, 예상 시간
-  자동 점검 결과: 테스트 개수, 시나리오 대응(@DisplayName의 "#번호"), 커밋 순서, 금지 패턴, 변경 파일 통계
+  자동 점검 결과: 테스트 개수, 시나리오 대응(@DisplayName의 "M1-1 #3" 형식), 커밋 순서, 금지 패턴, 변경 파일 통계
   완료 기준: 미션 문서의 체크박스
 학습자가 쓰는 것
   --notes 파일: "### 구현 요약", "### 설계 결정과 이유", "### 리뷰어에게 묻고 싶은 것",
@@ -28,7 +28,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from mission_doc import (ROOT, clean, find_issue, find_mission_doc, issue_title, parse,  # noqa: E402
-                         repo_slug, run, scenario_file)
+                         repo_slug, run, scenario_file, scenario_pattern)
 
 NOTE_HEADINGS = ["구현 요약", "설계 결정과 이유", "리뷰어에게 묻고 싶은 것", "실제 소요 시간", "TIL"]
 LEVEL_DESC = {"L1": "L1 (시그니처와 테스트 표 제공)", "L2": "L2 (요구사항과 테스트 표 제공)",
@@ -69,9 +69,16 @@ def test_section(roots, skip):
         return "`gradlew`가 있는 workspace를 찾지 못했다. M0-2 이전 미션이면 정상이다."
     rows = ["| workspace | 통과 | 실패 | 건너뜀 | 결과 |", "|---|---|---|---|---|"]
     for root in roots:
+        for old_xml in root.glob("**/build/test-results/test/*.xml"):
+            old_xml.unlink()  # 컴파일이 실패하면 test 태스크가 돌지 않아 이전 결과가 남는다
         out = run(["./gradlew", "test", "--console=plain"], check=False, cwd=root)
         total = fail = skip_n = 0
-        for xml in (root / "build" / "test-results" / "test").glob("*.xml"):
+        xmls = list(root.glob("**/build/test-results/test/*.xml"))  # 멀티 모듈(Phase 8)은 모듈별 build/ 아래에 있다
+        if not xmls:
+            build = "BUILD SUCCESSFUL" if "BUILD SUCCESSFUL" in out else "BUILD FAILED"
+            rows.append(f"| `{root.relative_to(ROOT).as_posix()}` | - | - | - | {build} (테스트 결과 파일 없음) |")
+            continue
+        for xml in xmls:
             s = ET.parse(xml).getroot()
             total += int(s.get("tests", 0))
             fail += int(s.get("failures", 0)) + int(s.get("errors", 0))
@@ -103,14 +110,14 @@ def scenario_section(info, roots):
         parts.append("미션 문서가 제공한 참조 시나리오:")
     names = display_names(roots)
     if not names and info["level"] != "L3":
-        parts.append("변경된 workspace에 `@DisplayName`이 있는 테스트가 없다. "
+        parts.append("workspace에 `@DisplayName`이 있는 테스트가 없다. "
                      f"미션 문서의 시나리오 {len(info['scenarios'])}개를 테스트 코드 없이 확인하는 미션(M0-1 등)이면 "
                      "완료 기준에 적힌 기록 파일로 대응한다.")
         return "\n\n".join(parts)
     rows = ["| 시나리오 | 테스트(@DisplayName) | 상태 |", "|---|---|---|"]
     missing = []
     for sid, _ in info["scenarios"]:
-        hits = [n for n in names if re.search(rf"#{re.escape(sid)}(?![0-9])", n)]
+        hits = [n for n in names if re.search(scenario_pattern(info["id"], sid), n)]
         if not hits:
             missing.append(sid)
         rows.append(f"| {sid} | {'<br>'.join(clean(h) for h in hits) if hits else '-'} | {'있음' if hits else '없음'} |")
@@ -180,15 +187,8 @@ def diffstat_section():
     return "\n".join(rows)
 
 
-def strip_bot_blocks(body):
-    """리뷰 봇이 PR 본문에 끼워 넣은 자동 생성 블록과 주석을 지운다"""
-    body = re.sub(r"<!-- This is an auto-generated comment.*?<!-- end of auto-generated comment[^>]*-->", "", body, flags=re.S)
-    return re.sub(r"<!--[^>]*(coderabbit|auto-generated)[^>]*-->", "", body, flags=re.I)
-
-
 def split_sections(body):
     """'## 제목' 단위로 나눈 dict"""
-    body = strip_bot_blocks(body)
     parts = re.split(r"^## (.+)$", body, flags=re.M)
     return {parts[i].strip(): parts[i + 1].strip() for i in range(1, len(parts) - 1, 2)}
 

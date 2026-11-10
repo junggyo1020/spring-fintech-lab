@@ -60,8 +60,11 @@ def progress_list(info):
             "- [ ] 시나리오 표만 커밋해 Draft PR로 리뷰를 받았다 (`mission_pr.py --draft`)",
             "- [ ] 시나리오마다 실패하는 테스트를 먼저 커밋했다",
             "- [ ] 구현 후 `./gradlew test`가 통과한다",
-        ] + [f"- [ ] 참조 시나리오 {sid}" for sid, _ in info["scenarios"]])
-    rows = [f"- [ ] 시나리오 #{sid} 테스트를 작성했고 통과한다" for sid, _ in info["scenarios"]]
+        ] + [f"- [ ] 참조 시나리오 {sid} (`@DisplayName(\"{info['id']} #{sid} ...\")`)" for sid, _ in info["scenarios"]])
+    first = info["scenarios"][0][0] if info["scenarios"] else "1"
+    example = f"{info['id']} {first if first.startswith('실험') else '#' + first}"
+    rows = [f"테스트 이름 형식: `@DisplayName(\"{example} 규칙을 문장으로\")` (PR 자동 점검이 이 형식으로 시나리오를 찾는다)", ""]
+    rows += [f"- [ ] {sid if sid.startswith('실험') else '시나리오 #' + sid} 테스트를 작성했고 통과한다" for sid, _ in info["scenarios"]]
     rows.append("- [ ] 실패하는 테스트를 구현보다 먼저 커밋했다 (`[test]` 커밋이 첫 구현 커밋보다 앞)")
     return "\n".join(rows)
 
@@ -120,10 +123,11 @@ def main():
         ap.error("미션 번호 또는 --phase를 지정한다")
     slug = repo_slug()
     labels = set() if a.dry_run else {l["name"] for l in json.loads(run(["gh", "label", "list", "--limit", "200", "--json", "name"]))}
+    created = {}  # 이번 실행에서 만든 이슈. 방금 만든 이슈는 GitHub 검색에 바로 잡히지 않는다
     for doc in docs:
         info = parse(doc)
         title = issue_title(info)
-        lookup = (lambda pid: None) if a.dry_run else find_issue
+        lookup = (lambda pid: None) if a.dry_run else (lambda pid: created.get(pid) or find_issue(pid))
         text = body(info, slug, lookup)
         if a.dry_run:
             print(f"===== {title}\nlabels: mission, phase-{info['phase']}, {info['level']}\nmilestone: {info['phase_title']}\n{text}")
@@ -138,6 +142,7 @@ def main():
         url = run(["gh", "issue", "create", "--title", title, "--body", text,
                    "--label", f"mission,phase-{info['phase']},{info['level']}",
                    "--milestone", info["phase_title"]])
+        created[info["id"]] = {"number": int(url.rstrip("/").split("/")[-1]), "title": title, "state": "OPEN"}
         print(f"생성: {url}")
 
 

@@ -53,19 +53,44 @@ def week_scope(readme_text, mission_id):
     return "", ""
 
 
+def parse_scenarios(body):
+    """시나리오 ID 목록. '| # |'로 시작하는 표의 행 번호와 '### 시나리오 N', '### 실험 N' 소제목만 센다.
+    시간 순서 표(| 시각 | 세션 A |)처럼 첫 칸이 T1인 표는 시나리오가 아니다."""
+    out, in_table = [], False
+    for line in body.splitlines():
+        head = re.match(r"^###\s*(시나리오|실험)\s*(\d+)", line)
+        if head:
+            sid = head.group(2) if head.group(1) == "시나리오" else f"실험 {head.group(2)}"
+            if sid not in [x for x, _ in out]:
+                out.append((sid, ""))
+            continue
+        if not line.startswith("|"):
+            in_table = False
+            continue
+        if re.match(r"^\|\s*#\s*\|", line):
+            in_table = True
+            continue
+        cell = re.match(r"^\|\s*([A-Z]?\d+)\s*\|\s*([^|]*)\|", line)
+        if in_table and cell and cell.group(1) not in [x for x, _ in out]:
+            out.append((cell.group(1), cell.group(2).strip()))
+    return out
+
+
+def scenario_pattern(mission_id, sid):
+    """@DisplayName에서 시나리오를 찾는 정규식. 형식: "M1-1 #3 ..." 또는 "M5-7 실험 2 ..." """
+    label = re.escape(sid) if sid.startswith("실험") else "#" + re.escape(sid)
+    return rf"{re.escape(mission_id)}\s+{label}(?![0-9])"
+
+
 def parse(doc):
     text = doc.read_text(encoding="utf-8")
     first = text.splitlines()[0]
     m = re.match(r"# (M(\d+)-(\d+)) (.+)", first)
     mission_id, phase, num, title = m.group(1), m.group(2), m.group(3), clean(m.group(4).strip())
-    meta = re.search(r"^> 가이드 수준: (L[123]) \u00b7 예상 시간: (\S+) \u00b7 선행: (.+)$", text, re.M)
+    meta = re.search(r"^> 가이드 수준: (L[123]), 예상 시간: ([^,\s]+), 선행: (.+)$", text, re.M)
     slug = doc.stem.split("-", 2)[2]
     criteria = [l for l in section(text, "완료 기준").splitlines() if l.strip().startswith("- [")]
-    scenarios = []
-    for line in section(text, "테스트 시나리오").splitlines():
-        cell = re.match(r"^\|\s*([A-Z]?\d+)\s*\|\s*([^|]*)\|", line)
-        if cell:
-            scenarios.append((cell.group(1), cell.group(2).strip()))
+    scenarios = parse_scenarios(section(text, "테스트 시나리오"))
     readme_text = (doc.parent.parent / "README.md").read_text(encoding="utf-8")
     phase_title = re.sub(r"\s*\([\d.]+주\)\s*$", "", readme_text.splitlines()[0].lstrip("# ").strip())
     phase_title = clean(re.sub(r"^(Phase \d+) \u2014 ", r"\1: ", phase_title))
