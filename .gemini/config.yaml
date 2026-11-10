@@ -1,7 +1,8 @@
-# Gemini Code Assist on GitHub 설정 (개인 Google 계정으로 무료, 공개·비공개 레포 모두)
+# Gemini Code Assist on GitHub 설정 (개인 Google 계정으로 무료, 공개 레포와 비공개 레포 모두)
 # 설치: https://github.com/apps/gemini-code-assist 에서 이 레포에 설치한다(레포 관리자가 직접).
 # 역할 분담: Gemini = 줄 단위 코드 품질 / Claude(.github/workflows/claude-review.yml) = 미션 문서 기준 리뷰
 # 리뷰 규칙은 같은 폴더의 styleguide.md에 있다.
+# .github/workflows/ 아래 파일(M0-3의 ci.yml)은 Google 문서에 따라 Gemini가 요약과 제안을 만들지 않는다. 이 파일은 Claude 리뷰가 맡는다.
 have_fun: false
 memory_config:
   disabled: false
@@ -20,6 +21,7 @@ ignore_patterns:
   - "phase-*/README.md"
   - "phase-*/missions/**"
   - ".claude/**"
-  - ".github/**"
+  - ".github/ISSUE_TEMPLATE/**"
+  - ".github/pull_request_template.md"
   - "**/build/**"
   - "**/gradle/wrapper/**"

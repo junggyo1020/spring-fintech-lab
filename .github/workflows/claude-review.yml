@@ -27,7 +27,7 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - uses: anthropics/claude-code-action@v1
@@ -41,10 +41,10 @@ jobs:
             spring-fintech-lab 커리큘럼의 미션 PR을 리뷰한다.
             1. .claude/skills/mission-review/SKILL.md와 .claude/skills/mission-review/references/writing-rules.md를 읽는다.
             2. SKILL.md 1절 표의 입력을 모은다. 미션 문서는 PR 본문 "미션 문서" 링크의 파일, 실행 결과는 PR 본문 "자동 점검 결과" 절과 `gh pr checks` 결과다. 테스트를 직접 실행하지 않는다.
-            3. SKILL.md 2절 등급, 3절 지적 형식, 5절 보고서 형식으로 1회차 리뷰를 쓴다.
-            4. 지적마다 해당 줄에 인라인 댓글을 남기고, 보고서 전체는 진행 상황 댓글에 쓴다.
-            5. 보고서에 실행 환경, 도구 권한, 댓글 작성 방식 설명을 쓰지 않는다.
-            6. Gemini Code Assist가 이미 같은 줄에 같은 내용을 지적했으면 그 지적은 쓰지 않는다.
+            3. `gh pr view --comments`에서 이 스킬 형식의 이전 리뷰 보고서를 찾는다. 없으면 1회차, 있으면 n회차로 쓰고 5절 "이전 지적 대조" 표와 4절 힌트 단계를 적용한다. L3 Draft 단계에서 받은 시나리오 표 리뷰(6절)도 이전 리뷰로 센다.
+            4. SKILL.md 2절 등급, 3절 지적 형식, 5절 보고서 형식으로 리뷰를 쓴다.
+            5. 지적마다 해당 줄에 인라인 댓글을 남기고, 보고서 전체는 진행 상황 댓글에 쓴다.
+            6. 보고서에 실행 환경, 도구 권한, 댓글 작성 방식 설명을 쓰지 않는다.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 30
@@ -59,7 +59,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - uses: anthropics/claude-code-action@v1
@@ -68,5 +68,5 @@ jobs:
           claude_args: |
             --model claude-opus-5-5
             --max-turns 30
-            --append-system-prompt "spring-fintech-lab 학습 레포다. 답하기 전에 .claude/skills/mission-review/SKILL.md와 references/writing-rules.md를 읽는다. PR에서 리뷰를 요청받으면 gh pr view --comments로 이전 리뷰 보고서를 찾아 회차를 정하고, SKILL.md 5절 형식에 '이전 지적 대조' 표와 4절 힌트 단계를 적용한다. PR 본문 '리뷰 반영 기록' 표를 대조 근거로 쓴다. 질문이나 힌트 요청은 SKILL.md 7절 형식으로 답한다. 정답 코드를 쓰지 않는다. 코드를 커밋하거나 브랜치를 만들지 않는다. 답에 실행 환경이나 도구 권한 설명을 쓰지 않는다."
+            --append-system-prompt "spring-fintech-lab 학습 레포다. 답하기 전에 .claude/skills/mission-review/SKILL.md와 references/writing-rules.md를 읽는다. PR에서 리뷰를 요청받으면 gh pr view --comments로 이전 리뷰 보고서를 찾아 회차를 정하고, SKILL.md 5절 형식에 '이전 지적 대조' 표와 4절 힌트 단계를 적용한다. PR 본문 '리뷰 반영 기록' 표를 대조 근거로 쓴다. L3 테스트 시나리오 표 리뷰 요청은 SKILL.md 6절을 따른다. 질문이나 힌트 요청은 SKILL.md 7절 형식으로 답한다. 정답 코드를 쓰지 않는다. 코드를 커밋하거나 브랜치를 만들지 않는다. 답에 실행 환경이나 도구 권한 설명을 쓰지 않는다."
             --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*)"

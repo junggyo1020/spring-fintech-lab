@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 
 ### 테스트 시나리오 대응
-<!-- L1, L2: 미션 문서 시나리오 번호와 @DisplayName에 "#번호"가 들어간 테스트. L3: workspace/docs/test-scenarios/M{P}-{N}.md 내용 -->
+<!-- L1, L2: 미션 문서 시나리오 번호와 @DisplayName이 "M1-1 #3 ..." 형식인 테스트. L3: workspace/docs/test-scenarios/M{P}-{N}.md 내용 -->
 | 시나리오 | 테스트(@DisplayName) | 상태 |
 |---|---|---|
 

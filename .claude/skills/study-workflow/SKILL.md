@@ -22,9 +22,9 @@ python3 .claude/skills/study-workflow/scripts/mission_issue.py M1-1 --dry-run
 |---|---|
 | 제목 | `[M1-1] 미션 제목` (제목의 가운뎃점은 쉼표로 바뀐다) |
 | 라벨 | `mission`, `phase-1`, `L1` |
-| 마일스톤 | `Phase 1: {Phase README 첫 줄 제목}` |
+| 마일스톤 | Phase README 첫 줄에서 주차 표기를 뺀 것. 예: `Phase 1: 금융 도메인을 위한 Java 기본기 + TDD` |
 | 시작 전 확인 | 선행 미션 PR 머지 여부(선행 미션 이슈 번호 포함), Phase README 주차별 계획에서 이 미션이 들어 있는 주의 개념 학습 범위, 브랜치 생성 명령 |
-| 진행 체크리스트 | L1, L2: 시나리오 번호마다 1개 + 테스트 커밋 순서 1개. L3: 시나리오 표 작성, "반드시 포함할 경우" 반영, Draft PR 리뷰, 테스트 먼저 커밋, 구현 5단계 |
+| 진행 체크리스트 | L1, L2: 테스트 이름 형식 안내 1줄, 시나리오마다 1개, 테스트 커밋 순서 1개. L3: 고정 항목 5개(시나리오 표 작성, "반드시 포함할 경우" 반영, Draft PR 리뷰, 테스트 먼저 커밋, 구현)와 참조 시나리오마다 1개(M7-3은 R1~R12) |
 | 완료 기준 | 미션 문서 완료 기준 그대로 |
 
 같은 미션 번호의 이슈가 이미 있으면(닫힌 것 포함) 건너뛴다. 다시 만들어야 하면 기존 이슈 번호를 사용자에게 보여주고 확인받는다.
@@ -53,7 +53,7 @@ python3 .claude/skills/study-workflow/scripts/mission_issue.py M1-1 --dry-run
 
    | 자동 점검 항목 | 알릴 내용 |
    |---|---|
-   | 시나리오 대응 "없음" | 없는 시나리오 번호. `@DisplayName`에 `#번호`가 빠졌거나 테스트가 없다 |
+   | 시나리오 대응 "없음" | 없는 시나리오 번호. `@DisplayName`이 `"M1-1 #3 ..."` 형식이 아니거나 테스트가 없다 |
    | 커밋 순서 "미충족" | 첫 구현 커밋이 첫 `[test]` 커밋보다 앞이다. 완료 기준 항목이라 리뷰에서 필수 지적이 된다 |
    | 금지 패턴 1건 이상 | 패턴 이름과 위치 |
    | 테스트 실패 1건 이상 | Draft로 만들지(`--draft`) 묻는다 |
@@ -68,7 +68,7 @@ L3 미션은 `workspace/docs/test-scenarios/M{P}-{N}.md`가 있으면 스크립�
 | 리뷰어 | 설정 파일 | 실행 시점 | 맡는 것 |
 |---|---|---|---|
 | Claude | `.github/workflows/claude-review.yml`, 기준은 mission-review 스킬 | PR 열림, Draft에서 Ready로 변경 | 미션 문서 기준: 시나리오 대응, 완료 기준, 필수/권장/질문 지적, 판정 |
-| Gemini Code Assist | `.gemini/config.yaml`, `.gemini/styleguide.md` | PR 열림 | 줄 단위 코드 결함 |
+| Gemini Code Assist | `.gemini/config.yaml`, `.gemini/styleguide.md` | PR 열림. Draft로 연 PR은 자동 리뷰하지 않으므로 Ready로 바꾼 뒤 `/gemini review` | 줄 단위 코드 결함 |
 
 리뷰를 반영하는 순서:
 1. 지적 1건을 고칠 때마다 커밋한다. 커밋 메시지에 지적 번호를 넣는다. 예: `[fix] 출금 검사와 차감을 한 잠금 안으로 이동 (리뷰 1회차 필수 1)`
