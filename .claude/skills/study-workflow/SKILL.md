@@ -1,6 +1,6 @@
 ---
 name: study-workflow
-description: spring-fintech-lab 미션의 GitHub 진행 흐름(미션 이슈 생성 → 미션 브랜치 → 템플릿 PR 생성 → CodeRabbit·Claude 리뷰 → 머지)을 실행한다. "M1-1 이슈 만들어줘", "Phase 2 이슈 전부 만들어", "미션 시작할게", "PR 올려줘", "PR 만들어줘", "PR 본문 갱신해줘", "리뷰 반영했어", "머지해줘"처럼 미션 이슈·브랜치·PR을 다루는 요청에는 반드시 이 스킬을 사용할 것. 코드 리뷰 내용 자체는 mission-review, 미션 문서 수정은 mission-authoring을 쓴다.
+description: spring-fintech-lab 미션의 GitHub 진행 흐름(미션 이슈 생성 → 미션 브랜치 → 템플릿 PR 생성 → Gemini·Claude 리뷰 → 머지)을 실행한다. "M1-1 이슈 만들어줘", "Phase 2 이슈 전부 만들어", "미션 시작할게", "PR 올려줘", "PR 만들어줘", "PR 본문 갱신해줘", "리뷰 반영했어", "머지해줘"처럼 미션 이슈·브랜치·PR을 다루는 요청에는 반드시 이 스킬을 사용할 것. 코드 리뷰 내용 자체는 mission-review, 미션 문서 수정은 mission-authoring을 쓴다.
 ---
 
 # 미션 진행 흐름 (이슈 → 실습 → PR → 리뷰)
@@ -49,10 +49,10 @@ PR이 열리면 두 리뷰어가 자동으로 붙는다.
 
 | 리뷰어 | 설정 파일 | 보는 것 |
 |---|---|---|
-| CodeRabbit | `.coderabbit.yaml` | 줄 단위 코드 품질: 금액 타입, 예외 처리, 테스트 경계값 |
+| Gemini Code Assist | `.gemini/config.yaml`, `.gemini/styleguide.md` | 줄 단위 코드 품질: 금액 타입, 예외 처리, 테스트 경계값 |
 | Claude | `.github/workflows/claude-review.yml` | 미션 문서 기준: 시나리오 대응, 불변식, 동시성, 완료 기준 (mission-review 스킬 형식) |
 
-- 리뷰를 반영해 push한 뒤 PR 댓글에 `@claude 지적 1~3번 반영했어, 다시 봐줘`처럼 쓰면 Claude가 다시 답한다. CodeRabbit은 push마다 자동으로 증분 리뷰를 한다.
+- 리뷰를 반영해 push한 뒤 PR 댓글에 `@claude 지적 1~3번 반영했어, 다시 봐줘`처럼 쓰면 Claude가 다시 답한다. Gemini는 PR이 열릴 때 1회 자동 리뷰하고, 이후에는 PR 댓글에 `/gemini review`를 쓰면 다시 리뷰한다.
 - 로컬 Claude Code 세션에서 리뷰받을 때는 mission-review 스킬을 쓴다(GitHub 리뷰와 기준이 같다).
 - 테스트를 바꿨으면 `mission_pr.py --update --notes <notes.md>`로 PR 본문의 테스트 결과·대응표를 갱신한다.
 
@@ -66,7 +66,7 @@ PR이 열리면 두 리뷰어가 자동으로 붙는다.
 
 | 항목 | 방법 |
 |---|---|
-| CodeRabbit | https://github.com/apps/coderabbitai 에서 이 레포에 설치 (공개 레포 무료) |
+| Gemini Code Assist | https://github.com/apps/gemini-code-assist 에서 이 레포에 설치 (개인 Google 계정, 무료) |
 | Claude GitHub App | https://github.com/apps/claude 에서 이 레포에 설치 |
 | Claude 토큰 | 로컬에서 `claude setup-token` → 레포 Secrets에 `CLAUDE_CODE_OAUTH_TOKEN` 등록 |
 

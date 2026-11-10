@@ -66,7 +66,7 @@ main                       ← 리뷰가 끝난 코드만
 | 1. 이슈 | 미션 문서에서 이슈를 만든다 | `python3 .claude/skills/study-workflow/scripts/mission_issue.py M1-1` |
 | 2. 실습 | 이슈 본문의 브랜치 이름으로 브랜치를 만들고 테스트 → 구현 순서로 커밋한다 | `git switch -c phase1/m1-1-money` |
 | 3. PR | 학습자 메모(구현 요약, 설계 결정, 자신 없는 부분, TIL)를 쓰고 PR을 만든다 | Claude Code에서 "M1-1 PR 올려줘" |
-| 4. 리뷰 | CodeRabbit(줄 단위 코드 품질)과 Claude(미션 문서 기준)가 PR에 리뷰를 단다 | 반영 후 PR 댓글에 `@claude 다시 봐줘` |
+| 4. 리뷰 | Gemini Code Assist(줄 단위 코드 품질)와 Claude(미션 문서 기준)가 PR에 리뷰를 단다 | 반영 후 PR 댓글에 `/gemini review`, `@claude 다시 봐줘` |
 | 5. 머지 | CI 통과, 완료 기준 전부 체크, "반드시 고칠 것" 해결 후 머지한다 | `gh pr merge --merge` |
 
 PR 본문의 테스트 결과, 시나리오 대응표, 완료 기준은 스크립트가 채운다. 시나리오 대응표는 `@DisplayName`의 `#번호`로 만들기 때문에 L1·L2 테스트 이름에 시나리오 번호를 빠뜨리지 않는다.

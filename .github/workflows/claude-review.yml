@@ -44,7 +44,7 @@ jobs:
             4. 테스트 실행 단계는 PR 본문의 "테스트 결과" 절과 CI(ci.yml) 결과로 대신한다. 직접 실행하지 않는다.
             5. 정답 코드를 쓰지 않는다. 지적 1건 = 파일:줄 + 관찰 + 질문 1개.
                줄 단위 지적은 인라인 댓글로, 보고서 전체는 `gh pr comment`로 남긴다.
-            6. CodeRabbit이 이미 남긴 줄 단위 지적과 같은 내용은 반복하지 않는다.
+            6. Gemini Code Assist가 이미 남긴 줄 단위 지적과 같은 내용은 반복하지 않는다.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 30
