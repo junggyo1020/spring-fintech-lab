@@ -1,188 +1,95 @@
-# Phase 0 — 개발 환경 & 학습 시스템 구축
+# Phase 0 — 개발 환경 & 학습 시스템 구축 (0.5주)
+
+> 가이드 수준: L1 · 선행: 없음 · 이 Phase의 workspace 시작 방법: 빈 디렉터리에서 직접 생성
 
 ## 학습 목표
-- JDK 21, IntelliJ, Gradle, Git으로 **스스로 프로젝트를 만들고 테스트를 돌릴 수 있다.**
-- Gradle이 무엇을 해주는지(의존성, 빌드, 테스트) 설명할 수 있다.
+이 Phase를 끝내면 다음을 할 수 있다.
+- 터미널에서 `java -version`, `./gradlew --version`, `git --version`을 실행해 JDK 21, Gradle 8.14.3, Git이 설치된 것을 보여준다.
+- IDE 마법사 없이 `settings.gradle.kts`, `build.gradle.kts`를 직접 작성해 Gradle 프로젝트를 만들고 `./gradlew test`로 테스트를 실행한다.
+- `implementation`과 `testImplementation`, Gradle과 Gradle Wrapper의 차이를 각각 한 문장으로 설명한다.
+- 레포에 push하거나 PR을 열 때 GitHub Actions가 `./gradlew test`를 실행하고, 테스트가 실패하면 PR에 빨간 X가 표시되게 만든다.
 
----
+## 이 Phase의 결과물
 
-## M0-1 개발 환경 세팅
+```
+spring-fintech-lab/
+├── .github/workflows/ci.yml          # M0-3
+└── phase-0-setup/workspace/
+    ├── ENVIRONMENT.md                # M0-1: 설치 확인 기록
+    ├── settings.gradle.kts           # M0-2
+    ├── build.gradle.kts
+    ├── gradlew, gradlew.bat
+    ├── gradle/wrapper/gradle-wrapper.jar
+    ├── gradle/wrapper/gradle-wrapper.properties
+    └── src/
+        ├── main/java/lab/hello/Greeter.java
+        └── test/java/lab/hello/GreeterTest.java
+```
 
-### 할 일
-1. **JDK 21** 설치 (SDKMAN 추천: `sdk install java 21-tem`) → `java -version` 확인
-2. **IntelliJ IDEA** 설치 (Community로 충분, Ultimate면 Spring 지원이 더 좋음)
-3. **Git** 설정
-   ```bash
-   git config --global user.name "내 이름"
-   git config --global user.email "내 이메일"
-   ```
-4. **Docker Desktop** 설치 (Phase 5부터 Testcontainers, MySQL에 필요. 지금 설치만)
-5. 이 레포를 clone 해서 IntelliJ로 열기
+## 핵심 개념 정리 (미션 전에 읽기)
 
-### 대안: 설치 없이 브라우저에서 개발하기 (GitHub Codespaces)
-회사 VDI처럼 프로그램을 설치할 수 없는 환경에서는 브라우저만으로 개발할 수 있다.
-이 레포에는 `.devcontainer/devcontainer.json`이 있어서 Java 21, Gradle, VS Code Java 확장이 자동으로 준비된다. (Docker는 Phase 5에서 추가 예정)
+### 1. Gradle이 하는 일
+Gradle은 `build.gradle.kts`에 적힌 설정을 읽어 다음 세 가지를 대신 실행한다.
 
-1. GitHub 레포 페이지 → 초록색 **Code** 버튼 → **Codespaces** 탭 → **Create codespace on main**
-2. 첫 실행은 몇 분 걸린다. 브라우저에 VS Code가 열리면 터미널에서 `java -version` 확인
-3. 다 쓰면 왼쪽 아래 **Codespaces** → **Stop Current Codespace** (켜둔 시간만큼 무료 사용량이 차감됨)
-
-> ⚠️ 회사 장비에서 쓰기 전에 회사 보안 정책(외부 개발 서비스 사용, 개인 용도 사용)을 먼저 확인할 것.
-> VS Code 단축키는 IntelliJ와 다르다. 명령 팔레트(`F1` 또는 `Ctrl Shift P`)에서 "Rename", "Extract" 등을 검색하면 된다.
-
-### IntelliJ 필수 단축키 (macOS / Windows)
-| 기능 | macOS | Windows |
+| 일 | 직접 하면 | Gradle이 하면 |
 |---|---|---|
-| 아무거나 찾기 | Shift 두 번 | Shift 두 번 |
-| 자동 완성/빠른 수정 | ⌥ Enter | Alt Enter |
-| 테스트 ↔ 구현 이동 | ⌘ ⇧ T | Ctrl Shift T |
-| 메서드 추출 | ⌘ ⌥ M | Ctrl Alt M |
-| 변수 추출 | ⌘ ⌥ V | Ctrl Alt V |
-| 이름 변경 | ⇧ F6 | Shift F6 |
-| 현재 테스트 실행 | ⌃ ⇧ R | Ctrl Shift F10 |
-| 마지막 실행 재실행 | ⌃ R | Shift F10 |
-| 코드 정렬 | ⌘ ⌥ L | Ctrl Alt L |
-| 생성(getter, 생성자 등) | ⌘ N | Alt Insert |
+| 의존성 다운로드 | JUnit, AssertJ jar를 Maven Central에서 받아 클래스패스에 추가 | `dependencies { }` 블록에 좌표(`group:artifact:version`)만 적는다 |
+| 컴파일 | `javac -d out src/main/java/**/*.java` | `./gradlew compileJava` |
+| 테스트 실행 | JUnit Platform 런처를 클래스패스와 함께 실행 | `./gradlew test`, 결과는 `build/reports/tests/test/index.html` |
 
-> 일부러 마우스를 쓰지 말고 단축키로 해보자. 리팩터링 속도가 학습 속도다.
+**의존성 구성(configuration)**
+- `implementation`: `src/main` 코드가 컴파일·실행할 때 쓴다. 테스트 코드에서도 보인다.
+- `testImplementation`: `src/test` 코드에서만 쓴다. JUnit, AssertJ는 운영 코드에 들어가면 안 되므로 여기에 둔다.
+- `testRuntimeOnly`: 테스트 실행 시에만 클래스패스에 올라간다. 테스트 코드에서 import하지 않는 JUnit Platform 런처가 여기 해당한다.
 
----
+**작업(task)과 증분 빌드**: `./gradlew test`는 `compileJava → compileTestJava → test` 순서로 작업을 실행한다. 입력 파일이 바뀌지 않은 작업은 다시 실행하지 않고 `UP-TO-DATE`로 표시한다.
 
-## M0-2 첫 Gradle 프로젝트 & 첫 테스트
+### 2. Gradle Wrapper
+Wrapper는 "이 프로젝트는 Gradle 8.14.3으로 빌드한다"를 파일로 고정하는 장치다.
 
-IntelliJ의 "New Project" 마법사 대신 **직접 파일을 만들어** Gradle 구조를 이해한다.
+| 파일 | 역할 | 커밋 여부 |
+|---|---|---|
+| `gradlew`, `gradlew.bat` | Wrapper 실행 스크립트 (macOS·Linux / Windows) | 커밋한다 |
+| `gradle/wrapper/gradle-wrapper.properties` | `distributionUrl`에 Gradle 버전(8.14.3)이 적혀 있다 | 커밋한다 |
+| `gradle/wrapper/gradle-wrapper.jar` | 지정 버전의 Gradle을 내려받아 실행하는 프로그램 | 커밋한다 (레포 `.gitignore`에 예외로 등록되어 있다) |
+| `.gradle/`, `build/` | 캐시와 빌드 결과물 | 커밋하지 않는다 |
 
-### 1) 디렉터리 만들기
+- `gradle ...`은 내 컴퓨터에 설치된 Gradle을 실행한다. 설치 버전이 사람마다 다를 수 있다.
+- `./gradlew ...`는 `gradle-wrapper.properties`에 적힌 버전을 처음 한 번 내려받아(`~/.gradle/wrapper/dists/`) 실행한다. 로컬 설치 버전과 무관하게 모두가 8.14.3을 쓴다. CI(M0-3)도 이 스크립트로 빌드한다.
+- 설치된 Gradle은 Wrapper 파일을 처음 생성할 때(`gradle wrapper`) 한 번만 필요하다.
 
-```
-phase-0-setup/workspace/
-├── settings.gradle.kts
-├── build.gradle.kts
-└── src/
-    ├── main/java/lab/hello/Greeter.java
-    └── test/java/lab/hello/GreeterTest.java
-```
+## 워크스페이스 만들기
+M0-2에서 `phase-0-setup/workspace/`에 직접 만든다. 파일 내용과 명령어는 [M0-2](missions/M0-2-first-gradle-project.md)에 있다.
 
-### 2) `settings.gradle.kts`
+| 항목 | 값 |
+|---|---|
+| `rootProject.name` | `hello` |
+| 루트 패키지 | `lab.hello` |
+| Java | 21 (Gradle toolchain) |
+| Gradle | 8.14.3 (Wrapper) |
+| 테스트 의존성 | `org.junit:junit-bom:5.11.4`, `org.junit.jupiter:junit-jupiter`, `org.assertj:assertj-core:3.27.3`, `org.junit.platform:junit-platform-launcher` |
 
-```kotlin
-rootProject.name = "hello"
-```
+## 주차별 계획
+| 주 | 미션 | 개념 학습 범위 |
+|---|---|---|
+| 0.5주 (4~7시간) | M0-1, M0-2, M0-3 | 이 README의 핵심 개념 1~2절, Gradle 공식 문서 "Building Java Applications Sample" |
 
-### 3) `build.gradle.kts`
+## 미션
+| 미션 | 주제 | 예상 시간 |
+|---|---|---|
+| [M0-1](missions/M0-1-dev-environment.md) | 개발 환경 세팅 | 1~2h |
+| [M0-2](missions/M0-2-first-gradle-project.md) | 첫 Gradle 프로젝트 & 첫 테스트 | 2~3h |
+| [M0-3](missions/M0-3-github-actions-ci.md) | GitHub Actions CI | 1~2h |
 
-```kotlin
-plugins {
-    java
-}
+## 읽을거리
+- Gradle 공식 문서: "Building Java Applications Sample", "The Gradle Wrapper" (Gradle 8.14.3 User Manual)
+- Gradle 공식 문서: "Dependency configurations" 절 (`implementation`, `testImplementation`, `testRuntimeOnly`)
+- JUnit 5 User Guide: "Writing Tests" 장의 "Annotations", "Parameterized Tests" 절
+- GitHub Docs: "Building and testing Java with Gradle"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.27.3")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-tasks.test {
-    useJUnitPlatform()
-    testLogging {
-        events("passed", "failed", "skipped")
-    }
-}
-```
-
-### 4) Gradle Wrapper 생성
-
-```bash
-cd phase-0-setup/workspace
-gradle wrapper --gradle-version 8.14.3   # 로컬에 gradle이 없으면 IntelliJ에서 프로젝트를 열면 자동 생성 가능
-./gradlew --version
-```
-
-> **Wrapper를 쓰는 이유:** 팀원 모두가(CI 포함) 같은 Gradle 버전을 쓰게 하려고.
-> `gradlew`, `gradle/wrapper/*`는 커밋한다. `.gradle/`, `build/`는 커밋하지 않는다.
-
-### 5) 테스트 먼저 작성 — `GreeterTest.java`
-
-요구사항:
-- `new Greeter().greet("민수")` → `"안녕하세요, 민수님"`
-- 이름이 `null`이거나 공백이면 `IllegalArgumentException`
-
-```java
-package lab.hello;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-class GreeterTest {
-
-    @Test
-    @DisplayName("이름을 받아 인사말을 만든다")
-    void greet() {
-        Greeter greeter = new Greeter();
-
-        String result = greeter.greet("민수");
-
-        assertThat(result).isEqualTo("안녕하세요, 민수님");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    @DisplayName("이름이 비어 있으면 예외가 발생한다")
-    void greetWithBlankName(String name) {
-        Greeter greeter = new Greeter();
-
-        assertThatThrownBy(() -> greeter.greet(name))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-}
-```
-
-### 6) 실행 → 실패 확인 → 구현 → 통과
-
-```bash
-./gradlew test       # 컴파일 실패 (Greeter 없음) ← 이것도 "실패하는 테스트"다
-```
-
-`Greeter`를 구현하고 다시 `./gradlew test` → 초록불.
-
-### 7) 커밋 & PR
-```bash
-git checkout -b phase0/m0-2-hello
-git add .
-git commit -m "test: Greeter 인사말 테스트 추가"
-# ... 구현 후
-git commit -m "feat: Greeter 구현"
-git push -u origin phase0/m0-2-hello
-```
-
-### 생각해볼 질문
-1. `testImplementation`과 `implementation`의 차이는?
-2. `platform("org.junit:junit-bom:...")`(BOM)은 무슨 역할을 하나?
-3. Given / When / Then 구조로 테스트를 나누면 무엇이 좋은가?
-4. `./gradlew test`를 두 번 연속 실행하면 두 번째는 왜 빠른가? (`UP-TO-DATE`)
-
----
-
-## 완료 체크리스트
-- [ ] `./gradlew test`가 터미널에서 통과한다
-- [ ] IntelliJ에서 테스트 하나만 골라 실행할 수 있다
-- [ ] 첫 PR을 올리고 머지했다
-- [ ] 첫 TIL을 작성했다
+## 완료 기준
+- [ ] `phase-0-setup/workspace/ENVIRONMENT.md`에 M0-1의 확인 명령 4개와 출력이 기록되어 있다
+- [ ] `phase-0-setup/workspace`에서 `./gradlew test`를 실행하면 `GreeterTest`의 테스트 5개가 PASSED로 출력되고 `BUILD SUCCESSFUL`이 나온다
+- [ ] IDE에서 `GreeterTest`의 테스트 메서드 하나만 골라 실행하는 방법을 보여줄 수 있다
+- [ ] PR을 열었을 때 GitHub Actions `ci` 워크플로가 초록 체크로 끝나고, 그 PR을 main에 머지했다
+- [ ] `til/`에 첫 TIL을 `til/TEMPLATE.md` 형식으로 작성했다
