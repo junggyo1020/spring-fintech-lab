@@ -1,0 +1,41 @@
+# CodeRabbit 설정 — 공개 레포는 무료 플랜으로 동작한다.
+# 설치: https://github.com/apps/coderabbitai 에서 이 레포에 GitHub App을 설치한다(레포 관리자가 직접).
+# 역할 분담: CodeRabbit = 줄 단위 코드 품질(버그 패턴, 예외 처리, 테스트 누락)
+#            Claude(.github/workflows/claude-review.yml) = 미션 문서 기준 리뷰(시나리오 대응, 불변식, 질문형 피드백)
+language: ko-KR
+tone_instructions: "학습용 레포다. 정답 코드 대신 파일:줄, 관찰한 사실, 학습자가 스스로 답을 찾을 질문 1개로 지적한다. 수정 코드 블록과 커밋 가능한 제안은 쓰지 않는다."
+reviews:
+  profile: assertive
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "^main$"
+  path_filters:
+    - "phase-*/workspace/**"
+    - "til/**"
+    - "!**/build/**"
+    - "!**/.gradle/**"
+    - "!**/gradle/wrapper/**"
+  path_instructions:
+    - path: "phase-*/workspace/src/main/**/*.java"
+      instructions: |
+        금융 백엔드 학습 미션 코드다. 우선순위 순으로 본다.
+        1) 정합성: 돈이 생기거나 사라지는 경로, 예외 발생 시 일부만 바뀌는 상태
+        2) 불변식: 잔액 >= 0, 차변 합 = 대변 합 같은 규칙을 객체 내부에서 지키는가
+        3) 동시성: 공유 가변 상태와 보호 수단, check-then-act 구간
+        4) 금액 타입: double/float 사용, BigDecimal의 equals/compareTo 혼동, RoundingMode 누락
+        static 필드 사용 자체는 지적하지 않는다. 미션 요구사항은 PR 본문의 미션 문서 링크에 있다.
+    - path: "phase-*/workspace/src/test/**/*.java"
+      instructions: |
+        기대값을 구현 코드로 계산하지 않았는지, 경계값(0, 정확히 잔액, 잔액+1)이 있는지,
+        @DisplayName에 미션 시나리오 번호(#N)가 있는지 본다. 동시성 테스트는 await 결과를 단언하는지 본다.
+    - path: "til/**"
+      instructions: "기술적으로 틀린 설명만 지적한다. 문체와 형식은 지적하지 않는다."
+chat:
+  auto_reply: true
