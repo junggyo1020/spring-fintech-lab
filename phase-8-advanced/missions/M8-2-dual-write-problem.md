@@ -77,7 +77,7 @@ Testcontainers의 `DockerClientFactory.instance().client()`가 돌려주는 dock
 - [ ] `./gradlew :corebank:test --tests '*DualWrite*'`에서 이 미션의 테스트 6개 이상이 통과한다
 - [ ] `docs/dual-write-report.md`에 전략 3개 × 열 5개(DB 커밋, 토픽 메시지, 유실, 유령, 이론값과의 차이 원인) 표가 있다
 - [ ] 같은 문서에 요구사항 7의 관찰 결과(HTTP 상태 또는 반환값, A 잔액)가 있다
-- [ ] PR 본문에 위 테스트 시나리오 표를 붙이고 리뷰를 먼저 받았다
+- [ ] `workspace/docs/test-scenarios/M8-2.md`에 테스트 시나리오 표를 쓰고(PR 생성 스크립트가 PR 본문에 첨부한다) 리뷰를 먼저 받았다
 
 ## 생각해볼 질문
 1. pause된 브로커에 보낸 요청이 TCP 수신 버퍼에 남아 있다가 unpause 후 기록되면, 프로듀서는 실패로 알았는데 메시지는 존재한다. 이 "결과 미확정" 상태는 M6-7 타행이체 타임아웃과 어떤 점이 같은가?

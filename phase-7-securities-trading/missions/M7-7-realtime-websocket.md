@@ -27,7 +27,7 @@ M7-4에서 엔진 상태는 엔진 스레드만 소유한다고 정했다. 이 �
 7. **메시지 변환**: Spring Framework 7에서 Jackson 3 기반 STOMP 변환기는 `JacksonJsonMessageConverter`(since 7.0)다. Jackson 2 기반 `MappingJackson2MessageConverter`는 7.x에서 제거 예정(deprecated for removal)이므로 쓰지 않는다. 테스트 클라이언트에도 같은 변환기를 설정한다.
 
 ## 직접 작성할 테스트 시나리오
-`docs/test-scenarios-M7-7.md`에 표를 쓰고 리뷰를 받은 뒤 구현한다. **최소 8개**. 테스트는 `@SpringBootTest(webEnvironment = RANDOM_PORT)`와 `WebSocketStompClient`(`StandardWebSocketClient`)로 실제 연결해서 받는다. 반드시 포함할 경우:
+`docs/test-scenarios/M7-7.md`에 표를 쓰고 리뷰를 받은 뒤 구현한다. **최소 8개**. 테스트는 `@SpringBootTest(webEnvironment = RANDOM_PORT)`와 `WebSocketStompClient`(`StandardWebSocketClient`)로 실제 연결해서 받는다. 반드시 포함할 경우:
 
 1. M7-3 참조 시나리오 R10의 준비 주문 3개를 넣은 뒤 받은 스냅샷: `bids` = [{`"10000"`, 10, 2}, {`"9990"`, 5, 1}], `asks` = []
 2. 매수 레벨 7개(9,940~10,000)를 만든 뒤 스냅샷 `bids` 길이 5, 첫 원소 10,000, 마지막 원소 9,960
@@ -47,7 +47,7 @@ M7-4에서 엔진 상태는 엔진 스레드만 소유한다고 정했다. 이 �
 힌트 없음. STOMP 설정은 Spring Framework 레퍼런스 "STOMP" 장의 "Enable STOMP" 절과 "STOMP Client" 절을 본다.
 
 ## 완료 기준
-- [ ] `docs/test-scenarios-M7-7.md`에 시나리오 8개 이상이 있고 "반드시 포함할 경우" 1~8번이 들어 있다
+- [ ] `docs/test-scenarios/M7-7.md`에 시나리오 8개 이상이 있고 "반드시 포함할 경우" 1~8번이 들어 있다
 - [ ] `./gradlew test`에서 1~8번 테스트가 통과하고, 3번이 `@RepeatedTest(5)`로 5회 모두 통과한다
 - [ ] `docs/engine-design.md`에 "시세 스냅샷" 절이 있고 (가)/(나) 중 고른 방법과 엔진 처리량(M7-4 모드 A)에 주는 영향을 측정값으로 적는다
 - [ ] 애플리케이션을 띄우고 브라우저 또는 `websocat` 같은 클라이언트로 `/topic/orderbook.A00002`를 구독해 받은 메시지 1개를 PR에 첨부한다

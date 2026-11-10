@@ -40,7 +40,7 @@ phase-7-securities-trading/workspace/
 ├── docs/
 │   ├── engine-design.md          # M7-4: 단일 스레드를 고른 이유, 큐 용량, 장애 시 동작
 │   ├── latency-report.md         # M7-4: 측정표
-│   ├── test-scenarios-M7-*.md    # 미션별 직접 작성한 테스트 시나리오 표 (PR 본문에도 첨부)
+│   ├── test-scenarios/M7-*.md    # 미션별 직접 작성한 테스트 시나리오 표 (PR 본문에도 첨부)
 │   └── recovery-report.md        # M7-8: 복구 시간·fsync 모드별 처리량
 └── src/main/java/lab/trading/
     ├── domain/order/      # Order, OrderStatus, OrderSide, OrderType, RejectReason, TickSizePolicy, PriceLimitPolicy
@@ -228,7 +228,7 @@ docker run -d --name trading-mysql -p 3307:3306 \
 
 합계 46~54h (주 12h 기준 4주).
 
-L3 미션은 구현 전에 `docs/test-scenarios-M7-{N}.md`에 테스트 시나리오 표(# / 준비 / 실행 / 기대 결과)를 먼저 쓰고 리뷰를 받는다. 시나리오 표가 리뷰를 통과하지 않으면 구현 리뷰로 넘어가지 않는다.
+L3 미션은 구현 전에 `docs/test-scenarios/M7-{N}.md`에 테스트 시나리오 표(# / 준비 / 실행 / 기대 결과)를 먼저 쓰고 리뷰를 받는다. 시나리오 표가 리뷰를 통과하지 않으면 구현 리뷰로 넘어가지 않는다.
 
 ## 읽을거리
 - Martin Fowler, "The LMAX Architecture" (2011) — https://martinfowler.com/articles/lmax.html — "Overall Structure", "Business Logic Processor", "Input and Output Disruptors" 절

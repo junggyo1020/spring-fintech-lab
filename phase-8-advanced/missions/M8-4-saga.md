@@ -114,7 +114,7 @@ trading·corebank를 한 테스트에서 모두 띄우기 어렵다면 corebank 
 - [ ] 모든 Saga 테스트가 불변식 I1~I5 공통 검사 메서드를 호출한다 (`grep`으로 호출 횟수 = 테스트 수 확인)
 - [ ] `docs/saga-design.md`에 Mermaid 상태 다이어그램, 전이표, 비교표(기준 6개), 선택 근거가 있다
 - [ ] Compose 환경에서 매수 주문 API를 curl로 호출 → 5초 안에 그 주문의 `saga_instance.state`가 `OPEN`이 되고(반대 매도 주문이 없을 때), corebank 계좌 조회의 `held_amount`가 홀드 금액과 같다
-- [ ] PR 본문에 테스트 시나리오 표를 붙이고 리뷰를 먼저 받았다
+- [ ] `workspace/docs/test-scenarios/M8-4.md`에 테스트 시나리오 표를 쓰고(PR 생성 스크립트가 PR 본문에 첨부한다) 리뷰를 먼저 받았다
 
 ## 생각해볼 질문
 1. 이 미션의 Saga는 격리성(Isolation)이 없다. 홀드가 걸린 뒤 체결 전까지 고객이 계좌 화면에서 보는 "출금 가능 금액"은 얼마인가? 이 중간 상태가 고객에게 보이는 것이 문제가 되는 업무를 하나 들고, 시맨틱 락(semantic lock) 대응책을 조사해 적는다.
