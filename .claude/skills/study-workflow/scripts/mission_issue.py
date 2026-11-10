@@ -6,7 +6,7 @@
   python3 .claude/skills/study-workflow/scripts/mission_issue.py --phase 1    # Phase 전체
   ... --dry-run                                                             # 만들지 않고 본문만 출력
 
-같은 미션 번호로 시작하는 이슈가 이미 있으면(열림·닫힘 모두) 건너뛴다.
+같은 미션 번호로 시작하는 이슈가 이미 있으면(열림, 닫힘 모두) 건너뛴다.
 라벨(mission, phase-N, L1~L3)과 마일스톤(Phase 제목)이 없으면 만든다.
 """
 import argparse
@@ -15,9 +15,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from mission_doc import find_issue, find_mission_doc, issue_title, parse, phase_missions, repo_slug, run  # noqa: E402
+from mission_doc import clean, find_issue, find_mission_doc, issue_title, parse, phase_missions, repo_slug, run, scenario_file  # noqa: E402
 
-LABEL_COLORS = {"mission": "1d76db", "L1": "c2e0c6", "L2": "fbca04", "L3": "d93f0b"}
+LABEL_COLORS = {"mission": "1d76db", "question": "d876e3", "doc-error": "b60205", "L1": "c2e0c6", "L2": "fbca04", "L3": "d93f0b"}
 
 
 def ensure_label(name, existing):
@@ -34,9 +34,41 @@ def ensure_milestone(slug, title):
         run(["gh", "api", f"repos/{slug}/milestones", "-f", f"title={title}"])
 
 
-def body(info, slug):
+LEVEL_DESC = {"L1": "L1 (시그니처와 테스트 표 제공)", "L2": "L2 (요구사항과 테스트 표 제공)",
+              "L3": "L3 (요구사항과 불변식만 제공, 테스트 시나리오는 직접 작성)"}
+
+
+def before_list(info, slug, lookup):
+    lines = []
+    for pid in info["prereq_ids"]:
+        found = lookup(pid)
+        ref = f" (#{found['number']})" if found else ""
+        lines.append(f"- [ ] 선행 미션 {pid}{ref}의 PR이 main에 머지됐다")
+    if info["scope"]:
+        readme = f"https://github.com/{slug}/blob/main/{info['readme_rel']}"
+        lines.append(f"- [ ] [Phase README]({readme}) 주차별 계획 {clean(info['week'])}의 개념 학습 범위를 읽었다: {clean(info['scope'])}")
+    lines.append(f"- [ ] `git switch main && git pull` 후 `git switch -c {info['branch']}`로 브랜치를 만들었다")
+    return "\n".join(lines)
+
+
+def progress_list(info):
+    if info["level"] == "L3":
+        path = scenario_file(info)
+        return "\n".join([
+            f"- [ ] `{path}`에 테스트 시나리오 표(# / 준비 / 실행 / 기대 결과)를 썼다",
+            "- [ ] 미션 문서 \"반드시 포함할 경우\"가 모두 시나리오 표에 들어 있다",
+            "- [ ] 시나리오 표만 커밋해 Draft PR로 리뷰를 받았다 (`mission_pr.py --draft`)",
+            "- [ ] 시나리오마다 실패하는 테스트를 먼저 커밋했다",
+            "- [ ] 구현 후 `./gradlew test`가 통과한다",
+        ] + [f"- [ ] 참조 시나리오 {sid}" for sid, _ in info["scenarios"]])
+    rows = [f"- [ ] 시나리오 #{sid} 테스트를 작성했고 통과한다" for sid, _ in info["scenarios"]]
+    rows.append("- [ ] 실패하는 테스트를 구현보다 먼저 커밋했다 (`[test]` 커밋이 첫 구현 커밋보다 앞)")
+    return "\n".join(rows)
+
+
+def body(info, slug, lookup):
     url = f"https://github.com/{slug}/blob/main/{info['doc_rel']}"
-    criteria = "\n".join(info["criteria"]) or "- [ ] (미션 문서의 완료 기준을 확인)"
+    criteria = clean("\n".join(info["criteria"])) or "- [ ] 미션 문서의 완료 기준 절을 확인한다"
     return f"""### 미션
 
 {info['id']} {info['title']}
@@ -45,21 +77,33 @@ def body(info, slug):
 
 {url}
 
-### 가이드 수준 · 예상 시간 · 선행
+### 가이드 수준
 
-{info['level']} · {info['hours']} · 선행: {info['prereq']}
+{LEVEL_DESC[info['level']]}
+
+### 예상 시간
+
+{info['hours']}
 
 ### 작업 브랜치
 
 `{info['branch']}`
 
+### 시작 전 확인
+
+{before_list(info, slug, lookup)}
+
+### 진행 체크리스트
+
+{progress_list(info)}
+
 ### 완료 기준
 
 {criteria}
 
-### 진행 메모
+### 막힌 지점 기록
 
-_No response_
+막힐 때마다 이 이슈에 댓글로 남긴다. 형식: 시도한 것(명령, 바꾼 코드 위치) / 기대한 결과 / 실제 결과(에러 원문)
 """
 
 
@@ -79,9 +123,10 @@ def main():
     for doc in docs:
         info = parse(doc)
         title = issue_title(info)
-        text = body(info, slug)
+        lookup = (lambda pid: None) if a.dry_run else find_issue
+        text = body(info, slug, lookup)
         if a.dry_run:
-            print(f"===== {title}\nlabels: mission, phase-{info['phase']}, {info['level']} · milestone: {info['phase_title']}\n{text}")
+            print(f"===== {title}\nlabels: mission, phase-{info['phase']}, {info['level']}\nmilestone: {info['phase_title']}\n{text}")
             continue
         found = find_issue(info["id"])
         if found:
