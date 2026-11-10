@@ -1,13 +1,18 @@
 name: 미션
-description: 커리큘럼 미션 1개를 진행할 때 만든다. 보통은 `study-workflow` 스킬의 스크립트가 미션 문서에서 자동으로 채워 만든다.
+description: 커리큘럼 미션 1개의 진행 상황을 기록한다. 보통은 mission_issue.py가 미션 문서에서 모든 칸을 채워 만든다.
 title: "[M?-?] 미션 제목"
 labels: ["mission"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        이 이슈는 미션 1개에 1개다. 진행하면서 체크박스를 체크하면 이슈 목록에 진행률(예: 3 of 22)이 표시된다.
+        막히면 이 이슈에 댓글로 기록하고, 질문이 필요하면 "질문" 템플릿으로 새 이슈를 만든다.
   - type: input
     id: mission
     attributes:
       label: 미션
-      description: "미션 번호와 제목. 예: M1-1 `Money` 값 객체"
+      description: "미션 번호와 제목. 예: M1-1 Money 값 객체"
     validations:
       required: true
   - type: input
@@ -18,30 +23,51 @@ body:
     validations:
       required: true
   - type: input
-    id: meta
+    id: level
     attributes:
-      label: 가이드 수준 · 예상 시간 · 선행
-      description: "미션 문서 메타 줄 그대로. 예: L1 · 4~6h · 선행: M0-2"
+      label: 가이드 수준
+      description: "L1(시그니처와 테스트 표 제공), L2(요구사항과 테스트 표 제공), L3(요구사항과 불변식만 제공)"
+    validations:
+      required: true
+  - type: input
+    id: hours
+    attributes:
+      label: 예상 시간
+      description: "미션 문서 메타 줄의 예상 시간. 예: 4~6h"
     validations:
       required: true
   - type: input
     id: branch
     attributes:
       label: 작업 브랜치
-      description: "phase{P}/m{P}-{N}-{slug} 형식. 예: phase1/m1-1-money"
+      description: "phase{P}/m{P}-{N}-{slug} 형식. PR 생성 스크립트와 리뷰 워크플로가 이 형식을 인식한다"
+    validations:
+      required: true
+  - type: textarea
+    id: before
+    attributes:
+      label: 시작 전 확인
+      description: 선행 미션 PR이 머지됐는지, 이번 주 개념 학습 범위를 읽었는지 확인한다
+    validations:
+      required: true
+  - type: textarea
+    id: progress
+    attributes:
+      label: 진행 체크리스트
+      description: "L1, L2는 테스트 시나리오 번호마다 1개. L3는 시나리오 표 작성, 시나리오 표 리뷰, 구현 순서"
     validations:
       required: true
   - type: textarea
     id: criteria
     attributes:
       label: 완료 기준
-      description: 미션 문서의 완료 기준 체크박스를 그대로 옮긴다. PR을 올리기 전에 모두 체크한다.
+      description: 미션 문서의 완료 기준을 그대로 옮긴다. PR을 올리기 전에 모두 체크한다
     validations:
       required: true
   - type: textarea
-    id: notes
+    id: log
     attributes:
-      label: 진행 메모
-      description: 막힌 지점(시도한 것 / 기대한 결과 / 실제 결과·에러 원문), 질문, 다음에 찾아볼 것
+      label: 막힌 지점 기록
+      description: "막힐 때마다 댓글로 남긴다. 형식: 시도한 것(명령, 바꾼 코드 위치) / 기대한 결과 / 실제 결과(에러 원문)"
     validations:
       required: false

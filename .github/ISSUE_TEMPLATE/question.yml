@@ -1,0 +1,53 @@
+name: 질문
+description: 미션을 진행하다 30분 넘게 막힌 지점을 질문한다. 댓글에 "@claude"를 쓰면 Claude가 정답 코드 없이 질문과 확인 방법으로 답한다.
+title: "[질문] M?-? 막힌 지점 한 줄 요약"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        답을 받으려면 이슈를 만든 뒤 댓글에 `@claude`와 함께 질문을 한 줄로 쓴다. 이슈 본문만으로는 Claude가 실행되지 않는다.
+        아래 칸이 구체적일수록 답도 구체적이다. "안 돼요"만 있으면 시도한 것부터 다시 묻게 된다.
+  - type: input
+    id: mission
+    attributes:
+      label: 미션과 미션 이슈
+      description: "예: M2-4 (#14)"
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: 관련 위치
+      description: "브랜치와 파일:줄. 예: phase2/m2-4-lock-timeout, Account.java:42"
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: 시도한 것
+      description: 실행한 명령, 바꾼 코드 위치, 읽은 문서 절을 시간 순서로 적는다
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 결과
+      description: "숫자로 적는다. 예: 성공 33건, 실패 17건, 잔액 1,000원"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과
+      description: 에러 메시지와 스택 트레이스 첫 20줄, 또는 실제로 나온 숫자를 붙여 넣는다
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: 내가 세운 가설
+      description: "원인이 무엇이라고 생각하는지와 그 근거. 예: 42번 줄과 45번 줄 사이에 다른 스레드가 끼어든다. 실패 횟수가 실행마다 달라서"
+    validations:
+      required: true

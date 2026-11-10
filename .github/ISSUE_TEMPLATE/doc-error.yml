@@ -1,6 +1,6 @@
 name: 미션 문서 오류 제보
-description: 미션 문서의 기대값·명령어·설명이 틀렸거나, 학습자마다 다르게 구현할 수 있을 만큼 모호할 때 만든다.
-title: "[문서] M?-? 오류 요약"
+description: 미션 문서의 기대값, 명령어, 설명이 틀렸거나, 학습자마다 다르게 구현할 수 있을 만큼 모호할 때 만든다.
+title: "[문서] M?-? 오류 한 줄 요약"
 labels: ["doc-error"]
 body:
   - type: input
@@ -13,7 +13,7 @@ body:
   - type: dropdown
     id: severity
     attributes:
-      label: 심각도
+      label: 종류
       options:
         - 오류 (따라 하면 테스트가 멈추거나 틀린 값이 나온다)
         - 모호 (구현이 둘 이상으로 갈린다)
@@ -23,15 +23,23 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: 문제
-      description: 문서에 적힌 내용과 실제로 관찰한 결과
+      label: 문서 내용과 관찰한 결과
+      description: 문서에 적힌 문장을 그대로 옮기고, 실제로 실행하거나 계산한 결과를 적는다
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법
+      description: 같은 결과를 다시 얻는 명령이나 계산식
+      render: text
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
       label: 근거
-      description: 실행 결과, 계산식, 공식 문서 링크
+      description: 공식 문서 링크와 절 이름, 또는 계산 과정
     validations:
       required: true
   - type: textarea
