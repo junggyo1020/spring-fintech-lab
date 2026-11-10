@@ -30,7 +30,7 @@
 |---|---|
 | L1 (Phase 0~1) | 테스트 시나리오 표의 행 하나를 테스트 메서드 하나로 옮긴다. 표의 `#` 번호를 `@DisplayName`에 넣는다 |
 | L2 (Phase 2~5) | 시그니처가 없는 클래스는 필드·메서드를 먼저 종이나 주석으로 설계한 뒤 테스트를 쓴다. 측정 미션은 표의 열 이름을 그대로 쓴다 |
-| L3 (Phase 6~8) | 구현 전에 "직접 작성할 테스트 시나리오" 표를 `workspace/docs/M{P}-{N}-scenarios.md`로 만들어 리뷰를 받는다. 미션의 "반드시 포함할 경우"가 모두 들어가야 구현으로 넘어간다 |
+| L3 (Phase 6~8) | 구현 전에 "직접 작성할 테스트 시나리오" 표를 `workspace/docs/test-scenarios/M{P}-{N}.md`로 만들어 리뷰를 받는다. 미션의 "반드시 포함할 경우"가 모두 들어가야 구현으로 넘어간다 |
 
 ## 브랜치 & 커밋 규칙
 
@@ -57,9 +57,23 @@ main                       ← 리뷰가 끝난 코드만
 - "무엇을 했다"가 아니라 **"무엇을 몰랐고, 지금은 무엇을 설명할 수 있는가"**를 쓴다.
 - 같은 실수를 두 번 하면 `til/weakness.md`에 한 줄 추가한다: `날짜 | 미션 | 틀린 내용 | 올바른 내용`.
 
+## 미션 진행 흐름 (이슈 → PR → 리뷰)
+
+미션 하나는 GitHub에서 아래 순서로 진행한다. 상세 절차와 스크립트 옵션은 `.claude/skills/study-workflow/SKILL.md`에 있다.
+
+| 단계 | 하는 일 | 명령 또는 요청 |
+|---|---|---|
+| 1. 이슈 | 미션 문서에서 이슈를 만든다 | `python3 .claude/skills/study-workflow/scripts/mission_issue.py M1-1` |
+| 2. 실습 | 이슈 본문의 브랜치 이름으로 브랜치를 만들고 테스트 → 구현 순서로 커밋한다 | `git switch -c phase1/m1-1-money` |
+| 3. PR | 학습자 메모(구현 요약, 설계 결정, 자신 없는 부분, TIL)를 쓰고 PR을 만든다 | Claude Code에서 "M1-1 PR 올려줘" |
+| 4. 리뷰 | CodeRabbit(줄 단위 코드 품질)과 Claude(미션 문서 기준)가 PR에 리뷰를 단다 | 반영 후 PR 댓글에 `@claude 다시 봐줘` |
+| 5. 머지 | CI 통과, 완료 기준 전부 체크, "반드시 고칠 것" 해결 후 머지한다 | `gh pr merge --merge` |
+
+PR 본문의 테스트 결과, 시나리오 대응표, 완료 기준은 스크립트가 채운다. 시나리오 대응표는 `@DisplayName`의 `#번호`로 만들기 때문에 L1·L2 테스트 이름에 시나리오 번호를 빠뜨리지 않는다.
+
 ## 리뷰 받는 법
 
-미션 하나를 끝내면 Claude Code 세션에서 요청한다. 이 레포의 `.claude/skills/mission-review` 스킬이 리뷰 기준을 담고 있다.
+PR을 올리면 리뷰가 자동으로 달린다. PR 없이 로컬에서 먼저 보고 싶으면 Claude Code 세션에서 요청한다. 두 경우 모두 `.claude/skills/mission-review` 스킬의 기준을 쓴다.
 
 ```
 phase1/m1-1-money 브랜치의 M1-1 과제 코드 리뷰해줘.
@@ -70,7 +84,7 @@ phase1/m1-1-money 브랜치의 M1-1 과제 코드 리뷰해줘.
 L3 미션은 구현 전에 시나리오 표 리뷰를 먼저 요청한다.
 
 ```
-M6-3 테스트 시나리오 표 검토해줘. (workspace/docs/M6-3-scenarios.md)
+M6-3 테스트 시나리오 표 검토해줘. (phase-6-core-banking/workspace/docs/test-scenarios/M6-3.md)
 ```
 
 스스로 확인할 체크리스트:
